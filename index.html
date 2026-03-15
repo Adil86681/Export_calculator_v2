@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firstbase Export Rate Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f1f5f9;
+    --surface: #ffffff;
+    --surface2: #f8fafc;
+    --border: #e2e8f0;
+    --accent: #2563eb;
+    --accent2: #7c3aed;
+    --warn: #ea580c;
+    --text: #0f172a;
+    --muted: #64748b;
+    --green: #2563eb;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(37,99,235,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(37,99,235,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glow {
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .glow-1 { top: -200px; left: -200px; background: rgba(37,99,235,0.05); }
+  .glow-2 { bottom: -200px; right: -200px; background: rgba(124,58,237,0.04); }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  header {
+    margin-bottom: 48px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(37,99,235,0.08);
+    border: 1px solid rgba(37,99,235,0.2);
+    border-radius: 100px;
+    padding: 6px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .logo-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px rgba(37,99,235,0.4);
+    animation: pulse 2s ease infinite;
+  }
+
+  h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+  }
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 20px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* Form grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+  }
+
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field.full { grid-column: 1 / -1; }
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  select, input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    padding: 12px 16px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 40px;
+    cursor: pointer;
+  }
+
+  select:focus, input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+  }
+
+  select option { background: #ffffff; }
+
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .input-wrap {
+    position: relative;
+  }
+  .currency-prefix {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .input-wrap input { padding-left: 28px; }
+
+  /* Results */
+  .results-card {
+    background: linear-gradient(135deg, rgba(37,99,235,0.04), rgba(124,58,237,0.04));
+    border: 1px solid rgba(37,99,235,0.18);
+    border-radius: var(--radius);
+    padding: 32px;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+
+  .breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .breakdown-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-label { color: var(--muted); }
+  .breakdown-value {
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .breakdown-value.highlight { color: var(--accent); }
+
+  .total-row {
+    margin-top: 20px;
+    padding: 20px 24px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .total-label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .total-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--accent);
+    text-shadow: 0 0 20px rgba(37,99,235,0.2);
+  }
+
+  .transit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.2);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: #7c3aed;
+    margin-top: 16px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* Exclusions */
+  .exclusion-tag {
+    display: inline-block;
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--warn);
+    margin: 3px;
+  }
+
+  .exclusions-section {
+    animation: fadeUp 0.6s ease 0.2s both;
+  }
+
+  .exclusions-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-top: 4px;
+  }
+
+  .note {
+    background: rgba(255,107,53,0.06);
+    border: 1px solid rgba(255,107,53,0.15);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #ff9970;
+    margin-top: 16px;
+    line-height: 1.5;
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .calc-btn {
+    display: none;
+  }
+
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 24px 0;
+  }
+
+  .warehouse-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-left: 10px;
+    vertical-align: middle;
+  }
+  .pill-us { background: rgba(37,99,235,0.08); color: var(--accent); border: 1px solid rgba(37,99,235,0.25); }
+  .pill-de { background: rgba(123,97,255,0.1); color: #7c3aed; border: 1px solid rgba(124,58,237,0.2); }
+  .pill-sg { background: rgba(255,200,0,0.1); color: #ffd700; border: 1px solid rgba(255,200,0,0.25); }
+
+  /* ── TAB NAVIGATION ── */
+  .tab-nav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 10px 16px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); background: var(--surface2); }
+  .tab-btn.active { background: var(--accent); color: #ffffff; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── SHIPMENT REPOSITORY ── */
+  .repo-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  .repo-controls input, .repo-controls select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 9px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .repo-controls input { flex: 1; min-width: 200px; }
+  .repo-controls input:focus, .repo-controls select:focus { border-color: var(--accent); }
+  .repo-stats {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .month-section { margin-bottom: 32px; }
+  .month-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .month-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .month-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .shipment-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .shipment-block:hover { border-color: rgba(37,99,235,0.3); }
+
+  .shipment-header {
+    background: #f8fafc;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .shipment-header:hover { background: #f1f5f9; }
+  .sh-left { display: flex; align-items: center; gap: 10px; }
+  .sh-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .sh-client {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .sh-order {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    opacity: 0.7;
+  }
+  .sh-right { display: flex; align-items: center; gap: 10px; }
+  .sh-action-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface2);
+    line-height: 1.6;
+  }
+  .sh-pdf-btn { color: var(--accent); border-color: rgba(37,99,235,0.3); }
+  .sh-pdf-btn:hover { background: rgba(37,99,235,0.08); border-color: var(--accent); }
+  .sh-delete-btn { color: var(--muted); }
+  .sh-delete-btn:hover { color: var(--warn); border-color: rgba(255,107,53,0.4); background: rgba(255,107,53,0.08); }
+  .sh-quote {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1d4ed8;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  .sh-ior {
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--surface2);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+  }
+  .sh-chevron {
+    color: var(--muted);
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  .shipment-block.open .sh-chevron { transform: rotate(180deg); }
+
+  .shipment-body { display: none; padding: 16px; }
+  .shipment-block.open .shipment-body { display: block; }
+
+  /* Meta row: dates + IOR */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .meta-item { }
+  .meta-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 3px;
+  }
+  .meta-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .meta-value.link { color: var(--accent); }
+
+  /* Cost row */
+  .cost-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    background: var(--surface2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 14px;
+  }
+  .cost-item { text-align: center; }
+  .cost-label { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 4px; }
+  .cost-value { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; color: var(--text); }
+  .cost-value.highlight { color: #1d4ed8; }
+  .cost-value.fb { color: var(--accent2); }
+
+  /* Items table */
+  .items-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .items-table th {
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .items-table td {
+    padding: 7px 10px;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    font-family: 'DM Mono', monospace;
+    color: var(--text);
+    vertical-align: middle;
+  }
+  .items-table tr:last-child td { border-bottom: none; }
+  .items-table .country-tag {
+    display: inline-block;
+    background: rgba(124,58,237,0.08);
+    color: #7c3aed;
+    border: 1px solid rgba(124,58,237,0.15);
+    border-radius: 4px;
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+  .items-table .total-row td { color: var(--accent); font-weight: 600; }
+  .items-table .item-name { color: var(--text); font-size: 11px; max-width: 320px; }
+
+  /* ── Add Shipment Button ── */
+  .add-shipment-btn {
+    margin-left: auto;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+    white-space: nowrap;
+  }
+  .add-shipment-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  /* ── Modal Overlay ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 700px;
+    animation: fadeUp 0.2s ease both;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .modal-close:hover { color: var(--text); background: var(--surface2); }
+
+  .modal-body { padding: 20px 24px 24px; }
+
+  .modal-section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 10px;
+  }
+  .modal-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .modal-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .modal-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .modal-field input, .modal-field select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal-field input:focus, .modal-field select:focus { border-color: var(--accent); }
+  .req { color: var(--warn); font-size: 11px; }
+  .opt { color: var(--muted); font-size: 10px; font-weight: 400; }
+
+  .input-wrap-modal {
+    display: flex;
+    align-items: center;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .input-wrap-modal:focus-within { border-color: var(--accent); }
+  .input-prefix-modal, .input-suffix {
+    padding: 8px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    background: transparent;
+    border: none;
+    white-space: nowrap;
+  }
+  .input-wrap-modal input {
+    flex: 1;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 8px 6px;
+  }
+  .input-wrap-modal input:focus { border-color: transparent; }
+
+  /* Line item rows */
+  .item-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px 60px 90px 28px;
+    gap: 6px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+  .item-row input, .item-row select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 7px 8px;
+    outline: none;
+    width: 100%;
+    transition: border-color 0.2s;
+  }
+  .item-row input:focus, .item-row select:focus { border-color: var(--accent); }
+  .item-row-header {
+    display: grid;
+    grid-template-columns: 120px 1fr 60px 60px 90px 28px;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .item-row-header span {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 2px;
+  }
+  .remove-row-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .remove-row-btn:hover { border-color: var(--warn); color: var(--warn); }
+
+  .add-row-btn {
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: 7px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 7px 14px;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 4px;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Custom Product Dropdown ── */
+  .prod-dropdown-wrap {
+    position: relative;
+    min-width: 0;
+  }
+  .prod-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 7px 24px 7px 8px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .prod-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+  .prod-input-arrow {
+    position: absolute;
+    right: 7px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: var(--muted);
+    font-size: 9px;
+    transition: transform 0.2s;
+  }
+  .prod-dropdown-wrap.open .prod-input-arrow { transform: translateY(-50%) rotate(180deg); }
+  .prod-dropdown-wrap.open .prod-input { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
+
+  .prod-dropdown-menu {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    background: #f8fafc;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    overflow: hidden;
+    flex-direction: column;
+  }
+  .prod-dropdown-wrap.open .prod-dropdown-menu { display: flex; }
+
+  .prod-search-wrap {
+    padding: 10px 10px 6px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .prod-search-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+  }
+  .prod-search-input:focus { border-color: var(--accent); }
+  .prod-search-input::placeholder { color: var(--muted); }
+
+  .prod-list {
+    overflow-y: auto;
+    flex: 1;
+    max-height: 240px;
+  }
+  .prod-list::-webkit-scrollbar { width: 4px; }
+  .prod-list::-webkit-scrollbar-track { background: transparent; }
+  .prod-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .prod-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgba(42,42,58,0.4);
+  }
+  .prod-option:last-child { border-bottom: none; }
+  .prod-option:hover, .prod-option.highlighted { background: rgba(37,99,235,0.06); }
+  .prod-option.selected { background: rgba(37,99,235,0.08); }
+
+  .prod-option-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    flex: 1;
+    line-height: 1.4;
+  }
+  .prod-option-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .prod-option-cat {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: #7c3aed;
+    background: rgba(124,58,237,0.08);
+    border: 1px solid rgba(124,58,237,0.15);
+    border-radius: 3px;
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+  .prod-option-weight {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .prod-no-results {
+    padding: 16px 12px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  /* Live preview */
+  .modal-preview {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-top: 20px;
+  }
+  .preview-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .preview-grid { display: flex; flex-direction: column; gap: 5px; }
+  .preview-row {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .preview-row span:last-child { color: var(--text); }
+  .preview-row.highlight { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
+  .preview-row.highlight span { color: #1d4ed8; font-weight: 600; font-size: 13px; }
+  .preview-row.fb-row { margin-top: 2px; }
+  .preview-row.fb-row span:first-child { color: var(--muted); }
+  .fb-bracket { color: var(--muted); }
+  .fb-margin { color: var(--accent2) !important; font-weight: 600; }
+
+  .modal-error {
+    background: rgba(255,107,53,0.1);
+    border: 1px solid rgba(255,107,53,0.3);
+    border-radius: 7px;
+    color: var(--warn);
+    font-size: 12px;
+    padding: 10px 14px;
+    margin-top: 14px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  .modal-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .modal-cancel:hover { border-color: var(--text); color: var(--text); }
+  .modal-submit {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 10px 24px;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .modal-submit:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  @media (max-width: 600px) {
+    .modal-grid-2, .modal-grid-3 { grid-template-columns: 1fr; }
+    .item-row { grid-template-columns: 100px 1fr 50px 50px 80px 28px; }
+    .item-row-header { grid-template-columns: 100px 1fr 50px 50px 80px 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+
+<div class="container">
+
+  <header>
+    <div class="logo-badge">Firstbase · Export Services</div>
+    <h1>Export <span>Dashboard</span></h1>
+    <p class="subtitle">Rate calculator and shipment repository for Firstbase global exports.</p>
+  </header>
+
+  <!-- TAB NAVIGATION -->
+  <div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('calculator')">📦 Rate Calculator</button>
+    <button class="tab-btn" onclick="switchTab('repository')">📋 Shipment Repository</button>
+    <button class="tab-btn" onclick="switchTab('products')">🗂 Product Info</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 1: RATE CALCULATOR                                     -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="tab-calculator" class="tab-panel active">
+
+  <div class="card" style="animation-delay:0.05s">
+    <div class="card-title">Shipment Details</div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Origin Warehouse</label>
+        <select id="warehouse" onchange="onWarehouseChange()">
+          <option value="">— Select warehouse —</option>
+          <option value="us">🇺🇸 US (Salt Lake City)</option>
+          <option value="de">🇩🇪 Germany (EU)</option>
+          <option value="sg">🇸🇬 Singapore</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Destination Country</label>
+        <select id="country" onchange="calculate()">
+          <option value="">— Select origin first —</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>Declared Value of Laptop (USD)</label>
+        <div class="input-wrap">
+          <span class="currency-prefix">$</span>
+          <input type="number" id="value" min="1" max="10000" value="2000" placeholder="e.g. 2000" oninput="calculate()" />
+        </div>
+      </div>
+    </div>
+    <div class="note" id="value-warn" style="display:none">⚠ For shipments exceeding $10,000 USD, contact <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2a4f525a45585e596a4c4358595e484b594f044345">[email&#160;protected]</a></strong> for a custom quote. These estimates may not apply.</div>
+  </div>
+
+  <div class="results-card" id="results">
+    <div class="card-title">Cost Breakdown</div>
+    <div class="empty-state" id="empty-state">
+      <div class="empty-icon">📦</div>
+      Select a warehouse, destination, and laptop value to calculate export costs.
+    </div>
+    <div id="breakdown-content" style="display:none">
+      <div class="breakdown">
+        <div class="breakdown-row"><span class="breakdown-label">Declared Laptop Value</span><span class="breakdown-value" id="r-value">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Local Duties & Tax <span id="r-duty-pct" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-duty">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">IOR Minimum Fee</span><span class="breakdown-value highlight" id="r-ior">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Fixed Cost (Freight & Brokerage)</span><span class="breakdown-value highlight" id="r-fixed">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Subtotal Export Charges</span><span class="breakdown-value" id="r-subtotal">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Firstbase Service & Handling (8%)</span><span class="breakdown-value highlight" id="r-handling">—</span></div>
+      </div>
+      <div class="total-row"><span class="total-label">Total Estimated Cost</span><span class="total-value" id="r-total">—</span></div>
+      <div class="transit-badge" id="r-transit">🕐 Transit time: —</div>
+      <div class="note" style="margin-top:16px">Rates are estimates and may vary based on local taxes, customs clearance, brokerage fees, and contractor costs at time of shipment. Only new, unopened laptops in original packaging qualify.</div>
+    </div>
+  </div>
+
+  <div class="card exclusions-section" style="margin-top:20px">
+    <div class="card-title">Excluded Regions</div>
+    <div class="exclusions-grid">
+      <span class="exclusion-tag">Albania</span><span class="exclusion-tag">Algeria</span><span class="exclusion-tag">Armenia</span><span class="exclusion-tag">Bangladesh</span><span class="exclusion-tag">China</span><span class="exclusion-tag">Cuba</span><span class="exclusion-tag">Iran</span><span class="exclusion-tag">Kosovo</span><span class="exclusion-tag">Kyrgyzstan</span><span class="exclusion-tag">Lebanon</span><span class="exclusion-tag">Moldova</span><span class="exclusion-tag">North Korea</span><span class="exclusion-tag">Russia</span><span class="exclusion-tag">Sudan</span><span class="exclusion-tag">Syria</span><span class="exclusion-tag">Ukraine</span><span class="exclusion-tag">Venezuela</span><span class="exclusion-tag">Vietnam</span>
+    </div>
+    <p style="margin-top:12px;font-size:12px;color:var(--muted)">This list is non-exhaustive. Additional regions may not be supported.</p>
+  </div>
+
+  </div><!-- end tab-calculator -->
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 2: SHIPMENT REPOSITORY                                 -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="tab-repository" class="tab-panel">
+
+    <div class="repo-controls">
+      <input type="text" id="repo-search" placeholder="Search client, order ID, item, country…" oninput="renderRepo()" />
+      <select id="repo-filter-client" onchange="renderRepo()">
+        <option value="">All Clients</option>
+      </select>
+      <select id="repo-filter-ior" onchange="renderRepo()">
+        <option value="">All IOR Partners</option>
+      </select>
+      <span class="repo-stats" id="repo-stats"></span>
+      <button class="add-shipment-btn" onclick="openAddShipment()">+ Add New Shipment</button>
+    </div>
+
+    <div id="repo-content"></div>
+
+  </div><!-- end tab-repository -->
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- TAB 3: PRODUCT INFO                                         -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="tab-products" class="tab-panel">
+
+    <!-- Add New Product Form -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title">Add New Product</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 100px 100px auto;gap:10px;align-items:end;">
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Item Name <span style="color:var(--warn)">*</span></label>
+          <input type="text" id="np-name" placeholder="e.g. Dell XPS 15" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 10px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Category</label>
+          <input type="text" id="np-category" placeholder="e.g. Laptop" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 10px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Country of Origin</label>
+          <input type="text" id="np-origin" placeholder="e.g. China" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 10px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Value ($)</label>
+          <input type="number" id="np-value" placeholder="0.00" min="0" step="0.01" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 10px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+        </div>
+        <div>
+          <label style="font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:5px;">Weight (lbs)</label>
+          <input type="number" id="np-weight" placeholder="0" min="0" step="0.1" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:9px 10px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+        </div>
+        <div style="padding-bottom:1px">
+          <button onclick="addNewProduct()" style="background:var(--accent);color:#ffffff;border:none;border-radius:8px;padding:9px 18px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">+ Add Product</button>
+        </div>
+      </div>
+      <div id="np-error" style="display:none;margin-top:10px;background:rgba(255,107,53,0.1);border:1px solid rgba(255,107,53,0.3);border-radius:7px;color:var(--warn);font-size:12px;padding:8px 12px;font-family:'DM Mono',monospace;"></div>
+    </div>
+
+    <!-- Search + Stats bar -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <input type="text" id="product-search" placeholder="Search products…" oninput="renderProductTable()"
+        style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 14px;outline:none;transition:border-color 0.2s;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+      <select id="product-filter-category" onchange="renderProductTable()"
+        style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:9px 14px;outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b6b80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;">
+        <option value="">All Categories</option>
+      </select>
+      <span id="product-stats" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);white-space:nowrap;"></span>
+    </div>
+
+    <!-- Product Table -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;" id="product-table">
+        <thead>
+          <tr style="background:#f1f5f9;">
+            <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border);">Item Name</th>
+            <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border);">Category</th>
+            <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border);">Origin</th>
+            <th style="text-align:right;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border);">Value</th>
+            <th style="text-align:right;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border);">Weight (lbs)</th>
+            <th style="text-align:center;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--border);">Source</th>
+            <th style="padding:10px 14px;border-bottom:1px solid var(--border);"></th>
+          </tr>
+        </thead>
+        <tbody id="product-tbody"></tbody>
+      </table>
+    </div>
+
+  </div><!-- end tab-products -->
+
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <!-- ADD SHIPMENT MODAL                                          -->
+  <!-- ══════════════════════════════════════════════════════════ -->
+  <div id="add-shipment-overlay" class="modal-overlay" onclick="closeAddShipment(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">New Shipment</div>
+        <button class="modal-close" onclick="closeAddShipment()">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Section: Basic Info -->
+        <div class="modal-section-label">Shipment Info</div>
+        <div class="modal-grid-2">
+          <div class="modal-field">
+            <label>Client Name <span class="req">*</span></label>
+            <input type="text" id="m-client" placeholder="e.g. Discord" oninput="recalcModal()" />
+          </div>
+          <div class="modal-field">
+            <label>Firstbase Order ID</label>
+            <input type="text" id="m-orderid" placeholder="e.g. abc123..." />
+          </div>
+          <div class="modal-field">
+            <label>Planned Ship Date</label>
+            <input type="text" id="m-planned" placeholder="e.g. 3/15/2026" />
+          </div>
+          <div class="modal-field">
+            <label>Confirmed Ship Date</label>
+            <input type="text" id="m-confirmed" placeholder="e.g. 3/16/2026" />
+          </div>
+          <div class="modal-field">
+            <label>Delivery Date</label>
+            <input type="text" id="m-delivery" placeholder="e.g. 3/28/2026" />
+          </div>
+          <div class="modal-field">
+            <label>Month / Year <span class="req">*</span></label>
+            <select id="m-month">
+              <option value="">— Select month —</option>
+              <option>January 2026</option><option>February 2026</option><option>March 2026</option>
+              <option>April 2026</option><option>May 2026</option><option>June 2026</option>
+              <option>July 2026</option><option>August 2026</option><option>September 2026</option>
+              <option>October 2026</option><option>November 2026</option><option>December 2026</option>
+              <option>January 2027</option><option>February 2027</option><option>March 2027</option>
+              <option>April 2027</option><option>May 2027</option><option>June 2027</option>
+              <option>July 2027</option><option>August 2027</option><option>September 2027</option>
+              <option>October 2027</option><option>November 2027</option><option>December 2027</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label>IOR Name</label>
+            <input type="text" id="m-ior" placeholder="e.g. Flavor Cloud" />
+          </div>
+          <div class="modal-field">
+            <label>IOR Invoice # <span class="opt">(optional)</span></label>
+            <input type="text" id="m-invoice" placeholder="e.g. 3292" />
+          </div>
+        </div>
+
+        <!-- Section: Line Items -->
+        <div class="modal-section-label" style="margin-top:20px">Line Items</div>
+        <div id="m-items-container">
+          <!-- rows injected by JS -->
+        </div>
+        <button class="add-row-btn" onclick="addItemRow()">+ Add Row</button>
+
+        <!-- Section: Costs -->
+        <div class="modal-section-label" style="margin-top:20px">Cost Details</div>
+        <div class="modal-grid-3">
+          <div class="modal-field">
+            <label>Local Tax % <span class="req">*</span></label>
+            <div class="input-wrap-modal">
+              <input type="number" id="m-tax-pct" placeholder="e.g. 5" step="0.01" min="0" oninput="recalcModal()" />
+              <span class="input-suffix">%</span>
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>IOR Fees</label>
+            <div class="input-wrap-modal">
+              <span class="input-prefix-modal">$</span>
+              <input type="number" id="m-ior-fee" value="150" step="0.01" min="0" oninput="recalcModal()" />
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>Fixed Cost</label>
+            <div class="input-wrap-modal">
+              <span class="input-prefix-modal">$</span>
+              <input type="number" id="m-fixed" value="200" step="0.01" min="0" oninput="recalcModal()" />
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>Variable Cost</label>
+            <div class="input-wrap-modal">
+              <span class="input-prefix-modal">$</span>
+              <input type="number" id="m-variable" value="0" step="0.01" min="0" oninput="recalcModal()" />
+            </div>
+          </div>
+          <div class="modal-field">
+            <label>FB Cost (internal) <span class="req">*</span></label>
+            <div class="input-wrap-modal">
+              <span class="input-prefix-modal">$</span>
+              <input type="number" id="m-fbcost" placeholder="e.g. 700" step="0.01" min="0" oninput="recalcModal()" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="modal-preview">
+          <div class="preview-title">Calculated Costs</div>
+          <div class="preview-grid">
+            <div class="preview-row"><span>Total Item Value</span><span id="pv-total-value">$0.00</span></div>
+            <div class="preview-row"><span>Local Tax &amp; Duties</span><span id="pv-tax">$0.00</span></div>
+            <div class="preview-row"><span>IOR &amp; Brokerage</span><span id="pv-ior">$0.00</span></div>
+            <div class="preview-row"><span>Fixed Cost</span><span id="pv-fixed">$0.00</span></div>
+            <div class="preview-row"><span>Variable Cost</span><span id="pv-variable">$0.00</span></div>
+            <div class="preview-row"><span>FB Service &amp; Handling (8%)</span><span id="pv-handling">$0.00</span></div>
+            <div class="preview-row highlight"><span>Quote to Customer</span><span id="pv-quote">$0.00</span></div>
+            <div class="preview-row fb-row"><span>FB Cost <span id="pv-fbcost-bracket" class="fb-bracket"></span></span><span id="pv-margin" class="fb-margin">—</span></div>
+          </div>
+        </div>
+
+        <div id="modal-error" class="modal-error" style="display:none"></div>
+
+        <div class="modal-actions">
+          <button class="modal-cancel" onclick="closeAddShipment()">Cancel</button>
+          <button class="modal-submit" onclick="submitShipment()">Add Shipment</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div><!-- end container -->
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ── TAB SWITCHER ────────────────────────────────────────────────
+function switchTab(name) {
+  const tabs = ['calculator','repository','products'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === name));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'repository') initRepo();
+  if (name === 'products') renderProductTable();
+}
+
+// ── RATE CALCULATOR ─────────────────────────────────────────────
+const rates = {
+  us: { currency:'USD', countries: {
+    "Canada":       {duty:0.15,ior:150, fixed:200,  transit:"~20 business days"},
+    "Chile":        {duty:0.28,ior:500, fixed:1425, transit:"~20 business days"},
+    "Colombia":     {duty:0.21,ior:500, fixed:1670, transit:"~20 business days"},
+    "Costa Rica":   {duty:0.14,ior:400, fixed:600,  transit:"~20 business days"},
+    "Ecuador":      {duty:0.25,ior:500, fixed:1250, transit:"~20 business days"},
+    "El Salvador":  {duty:0.14,ior:500, fixed:1245, transit:"~20 business days"},
+    "Guatemala":    {duty:0.27,ior:500, fixed:1260, transit:"~20 business days"},
+    "Honduras":     {duty:0.30,ior:500, fixed:1290, transit:"~20 business days"},
+    "Hong Kong":    {duty:0.00,ior:500, fixed:2275, transit:"~20 business days"},
+    "India":        {duty:0.28,ior:600, fixed:2350, transit:"~20 business days"},
+    "Indonesia":    {duty:0.26,ior:500, fixed:2350, transit:"~20 business days"},
+    "Ireland":      {duty:0.24,ior:500, fixed:350,  transit:"~20 business days"},
+    "Israel":       {duty:0.17,ior:300, fixed:300,  transit:"~20 business days"},
+    "Japan":        {duty:0.12,ior:250, fixed:250,  transit:"~20 business days"},
+    "Jordan":       {duty:0.41,ior:750, fixed:2250, transit:"~20 business days"},
+    "Kazakhstan":   {duty:0.18,ior:750, fixed:2910, transit:"~20 business days"},
+    "Kenya":        {duty:0.23,ior:500, fixed:2090, transit:"~20 business days"},
+    "Mauritius":    {duty:0.20,ior:750, fixed:1650, transit:"~20 business days"},
+    "Mexico":       {duty:0.18,ior:500, fixed:1395, transit:"~20 business days"},
+    "Morocco":      {duty:0.29,ior:750, fixed:1745, transit:"~20 business days"},
+    "New Zealand":  {duty:0.15,ior:500, fixed:2120, transit:"~20 business days"},
+    "Nicaragua":    {duty:0.55,ior:750, fixed:1850, transit:"~20 business days"},
+    "Pakistan":     {duty:0.88,ior:750, fixed:2800, transit:"~20 business days"},
+    "Panama":       {duty:0.21,ior:500, fixed:1460, transit:"~20 business days"},
+    "Peru":         {duty:0.30,ior:500, fixed:1750, transit:"~20 business days"},
+    "Philippines":  {duty:0.16,ior:750, fixed:2250, transit:"~20 business days"},
+    "Puerto Rico":  {duty:0.12,ior:500, fixed:1440, transit:"~20 business days"},
+    "Qatar":        {duty:0.12,ior:750, fixed:2950, transit:"~20 business days"},
+    "Saudi Arabia": {duty:0.19,ior:750, fixed:1980, transit:"~20 business days"},
+    "South Africa": {duty:0.32,ior:750, fixed:1800, transit:"~20 business days"},
+    "South Korea":  {duty:0.18,ior:500, fixed:675,  transit:"~20 business days"},
+    "Sri Lanka":    {duty:0.38,ior:750, fixed:2495, transit:"~20 business days"},
+    "Switzerland":  {duty:0.09,ior:500, fixed:850,  transit:"~20 business days"},
+    "Thailand":     {duty:0.09,ior:750, fixed:1300, transit:"~20 business days"},
+    "Tunisia":      {duty:0.63,ior:750, fixed:3890, transit:"~20 business days"},
+    "Turkey":       {duty:1.11,ior:700, fixed:2950, transit:"~20 business days"},
+    "Uruguay":      {duty:0.40,ior:500, fixed:1650, transit:"~20 business days"},
+    "Uzbekistan":   {duty:0.50,ior:750, fixed:2285, transit:"~20 business days"},
+  }},
+  de: { currency:'EUR', countries: {
+    "Switzerland": {duty:0.09,ior:50,fixed:625,transit:"15–18 business days"},
+    "Norway":      {duty:0.25,ior:50,fixed:825,transit:"15–18 business days"},
+  }},
+  sg: { currency:'USD', countries: {
+    "Thailand":  {duty:0.07,ior:325,fixed:300,transit:"12 business days"},
+    "Indonesia": {duty:0.21,ior:250,fixed:250,transit:"16 business days"},
+    "Taiwan":    {duty:0.06,ior:400,fixed:425,transit:"15 business days"},
+  }}
+};
+function onWarehouseChange() {
+  const wh = document.getElementById('warehouse').value;
+  const cs = document.getElementById('country');
+  cs.innerHTML = wh && rates[wh] ? '<option value="">— Select destination —</option>' : '<option value="">— Select origin first —</option>';
+  if (wh && rates[wh]) Object.keys(rates[wh].countries).sort().forEach(c => { const o=document.createElement('option'); o.value=o.textContent=c; cs.appendChild(o); });
+  calculate();
+}
+function fmt(a,cur){const s=cur==='EUR'?'€':'$'; return s+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function calculate() {
+  const wh=document.getElementById('warehouse').value, country=document.getElementById('country').value, val=parseFloat(document.getElementById('value').value);
+  document.getElementById('value-warn').style.display=(val>10000)?'block':'none';
+  const content=document.getElementById('breakdown-content'), empty=document.getElementById('empty-state');
+  if (!wh||!country||isNaN(val)||val<=0){content.style.display='none';empty.style.display='block';return;}
+  const r=rates[wh].countries[country]; if(!r){content.style.display='none';empty.style.display='block';return;}
+  const currency=rates[wh].currency, duty=val*r.duty, subtotal=duty+r.ior+r.fixed, handling=subtotal*0.08, total=subtotal+handling;
+  document.getElementById('r-value').textContent='$'+val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' USD';
+  document.getElementById('r-duty-pct').textContent='('+( r.duty*100).toFixed(0)+'% of declared value)';
+  document.getElementById('r-duty').textContent=fmt(duty,currency);
+  document.getElementById('r-ior').textContent=fmt(r.ior,currency);
+  document.getElementById('r-fixed').textContent=fmt(r.fixed,currency);
+  document.getElementById('r-subtotal').textContent=fmt(subtotal,currency);
+  document.getElementById('r-handling').textContent=fmt(handling,currency);
+  document.getElementById('r-total').textContent=fmt(total,currency);
+  document.getElementById('r-transit').textContent='🕐 Transit time: '+r.transit;
+  content.style.display='block'; empty.style.display='none';
+}
+
+// ── SHIPMENT REPOSITORY DATA ─────────────────────────────────────
+const shipments = [
+  // ══ AUGUST 2023 ══
+  {month:"August 2023",num:1,client:"Replicant",orderId:"COT-12531",planned:"7/9/2023",confirmed:"7/10/2023",delivery:"7/24/2023",ior:"Truelog",invoice:"",taxes:"$1,744.90",brokerage:"$1,744.90",fixed:"$1,050.00",variable:"$221.40",handling:"$380.90",quote:"$5,142.10",fbCost:"$5,142.10",items:[{country:"Canada",item:"MacBook Pro 16\" M2 Pro 12-Core CPU 19-Core GPU 16GB RAM 1TB SSD",count:12,weight:108,value:"$34,898.04"}]},
+  {month:"August 2023",num:2,client:"Paxos",orderId:"adbcb780-4089-4801-bdee-1acb82aa8c7b",planned:"8/1/2023",confirmed:"8/3/2023",delivery:"8/18/2023",ior:"IOR Direct",invoice:"3292",taxes:"$4,830.00",brokerage:"$5,635.00",fixed:"$3,950.00",variable:"$171.36",handling:"$1,166.91",quote:"$15,753.27",fbCost:"$11,157.74",items:[{country:"Argentina",item:"MacBook Pro 16\" M1 Pro 10-Core CPU 16-Core GPU 32GB RAM 512GB SSD",count:7,weight:63,value:"$16,100.00"}]},
+  {month:"August 2023",num:3,client:"Mysten Labs",orderId:"32d3722b-bec3-490d-90a8-18e76c554926",planned:"8/29/2023",confirmed:"",delivery:"",ior:"Truelog",invoice:"",taxes:"$3,224.25",brokerage:"$0.00",fixed:"$1,225.00",variable:"$91.80",handling:"$363.28",quote:"$4,904.33",fbCost:"$4,904.33",items:[{country:"Japan",item:"MacBook Pro 16\" M2 Max 12-Core CPU 30-Core GPU 64 GB RAM 2 TB SSD",count:5,weight:45,value:"$21,495.00"}]},
+  {month:"August 2023",num:4,client:"Mysten Labs",orderId:"COT-13320",planned:"8/17/2023",confirmed:"8/21/2023",delivery:"",ior:"Truelog",invoice:"",taxes:"$2,235.48",brokerage:"$0.00",fixed:"$446.00",variable:"$36.90",handling:"$217.47",quote:"$2,935.85",fbCost:"$2,935.85",items:[{country:"South Korea",item:"MacBook Pro 16\" M2 Max 12-Core CPU 30-Core GPU 64 GB RAM 2 TB SSD",count:2,weight:18,value:"$8,598.00"}]},
+  // ══ SEPTEMBER 2023 ══
+  {month:"September 2023",num:5,client:"Mysten Labs",orderId:"1152ba8d-0bda-4a12-a10f-c04bfa10801c",planned:"9/1/2023",confirmed:"9/5/2023",delivery:"9/12/2023",ior:"Truelog",invoice:"",taxes:"$1,117.74",brokerage:"$0.00",fixed:"$446.00",variable:"$18.45",handling:"$126.58",quote:"$1,708.77",fbCost:"$1,708.77",items:[{country:"South Korea",item:"MacBook Pro 16\" M2 Max 12-Core CPU 30-Core GPU 64 GB RAM 2 TB SSD",count:1,weight:9,value:"$4,299.00"}]},
+  // ══ FEBRUARY 2024 ══
+  {month:"February 2024",num:6,client:"Fortis Games",orderId:"c90e49b8-7a28-41ae-9b78-12d32f38e2ad",planned:"2/12/2024",confirmed:"2/12/2024",delivery:"2/29/2024",ior:"IOR Direct",invoice:"3871",taxes:"$2,337.51",brokerage:"$169.66",fixed:"$1,370.00",variable:"$0.00",handling:"$310.17",quote:"$4,187.34",fbCost:"$3,641.58",items:[{country:"Argentina",item:"MacBook Pro 16\" M2 Max 12-Core CPU 38-Core GPU 32GB RAM 1TB SSD",count:1,weight:9,value:"$3,770.17"}]},
+  // ══ MARCH 2024 ══
+  {month:"March 2024",num:7,client:"Sterling",orderId:"bf64b931-c688-42f0-bfa8-a74b3436a364",planned:"3/15/2024",confirmed:"3/15/2024",delivery:"4/1/2024",ior:"IOR Direct",invoice:"",taxes:"$7,522.48",brokerage:"$345.42",fixed:"$2,975.00",variable:"$0.00",handling:"$867.43",quote:"$11,710.33",fbCost:"$9,240.16",items:[{country:"Brazil",item:"Hewlett-Packard Elite Book 840 14\" G10 Notebook 16GB RAM 512GB SSD",count:4,weight:20,value:"$7,676.00"}]},
+  {month:"March 2024",num:8,client:"Sterling",orderId:"d367bd7e-92d9-481e-a1bf-cf8f47e81370",planned:"3/15/2024",confirmed:"3/15/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$1,228.16",brokerage:"$1,151.40",fixed:"$3,200.00",variable:"$0.00",handling:"$446.36",quote:"$6,025.92",fbCost:"$3,335.06",items:[{country:"Mexico",item:"Hewlett-Packard Elite Book 840 14\" G10 Notebook 16GB RAM 512GB SSD",count:4,weight:20,value:"$7,676.00"}]},
+  // ══ MAY 2024 ══
+  {month:"May 2024",num:9,client:"Fortis Games",orderId:"08a546c4-e035-4392-98f2-d79bd35639f8",planned:"",confirmed:"",delivery:"5/24/2024",ior:"IOR Direct",invoice:"",taxes:"$902.79",brokerage:"$500.00",fixed:"$1,205.00",variable:"$0.00",handling:"$208.62",quote:"$2,816.41",fbCost:"$2,692.79",items:[{country:"Colombia",item:"MacBook Pro 16\" M2 Max 12-Core CPU 30-Core GPU 64 GB RAM 2 TB SSD",count:1,weight:9,value:"$4,299.00"}]},
+  {month:"May 2024",num:10,client:"UiPath",orderId:"fba7e6e5-7ffd-475c-b68d-0490813c5ee2",planned:"",confirmed:"5/15/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$22,476.30",brokerage:"$1,032.08",fixed:"$2,000.00",variable:"$0.00",handling:"$2,040.67",quote:"$27,549.05",fbCost:"$24,183.90",items:[{country:"Brazil",item:"Dell Latitude 7420 i7 16GB RAM 512GB SSD - US / English KB - US/CA Plug",count:15,weight:0,value:"$22,935.00"}]},
+  {month:"May 2024",num:11,client:"Sterling",orderId:"042b3fe2-e53b-4628-9e4a-45ccd0952f17",planned:"",confirmed:"5/15/2024",delivery:"",ior:"",invoice:"",taxes:"$7,522.48",brokerage:"$500.00",fixed:"$2,000.00",variable:"$0.00",handling:"$801.80",quote:"$10,824.28",fbCost:"$10,824.28",items:[{country:"Brazil",item:"Hewlett-Packard Elite Book 840 14\" G10 Notebook 16GB RAM 512GB SSD",count:4,weight:20,value:"$7,676.00"}]},
+  // ══ JUNE 2024 ══
+  {month:"June 2024",num:12,client:"Fortis Games",orderId:"ebac57ff-fb13-4223-af7c-de50bdc8591d",planned:"",confirmed:"6/27/2024",delivery:"7/16/2024",ior:"Truelog",invoice:"",taxes:"$367.34",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$57.39",quote:"$774.72",fbCost:"$517.41",items:[{country:"Canada",item:"Precision 5690Workstation 16\" i9-13900GH vPro NVIDIA RTX 5000 Ada 64GB RAM 4TB SSD",count:1,weight:9,value:"$7,346.72"}]},
+  // ══ JULY 2024 ══
+  {month:"July 2024",num:13,client:"Fortis Games",orderId:"7ccc030c-4aea-4c99-8e65-d784e2300850",planned:"",confirmed:"",delivery:"7/16/2024",ior:"Truelog",invoice:"",taxes:"$240.00",brokerage:"$500.00",fixed:"$2,170.00",variable:"$0.00",handling:"$232.80",quote:"$3,142.80",fbCost:"$2,388.37",items:[{country:"Thailand",item:"Cintiq 22 Pro Creative Pen Display",count:1,weight:23,value:"$2,999.95"}]},
+  {month:"July 2024",num:14,client:"Fortis Games",orderId:"8faa62c4-76a4-4692-abbe-74c6e3d675db",planned:"",confirmed:"7/22/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$839.79",brokerage:"$500.00",fixed:"$1,500.00",variable:"$0.00",handling:"$227.18",quote:"$3,066.97",fbCost:"$2,674.79",items:[{country:"Colombia",item:"MacBook Pro 16\" M3 Max 16-Core CPU 40-Core GPU 48GB RAM 1TB SSD - US / English - Space Black - US/CA Plug",count:1,weight:9,value:"$3,999.00"}]},
+  {month:"July 2024",num:15,client:"Fortis Games",orderId:"a54ad8e6-01cb-4564-8343-8d761178eed6",planned:"",confirmed:"7/22/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$839.79",brokerage:"$500.00",fixed:"$1,500.00",variable:"$0.00",handling:"$227.18",quote:"$3,066.97",fbCost:"$2,554.79",items:[{country:"Colombia",item:"MacBook Pro 16\" M3 Max 16-Core CPU 40-Core GPU 48GB RAM 1TB SSD - US / English - Space Black - US/CA Plug",count:1,weight:9,value:"$3,999.00"}]},
+  {month:"July 2024",num:16,client:"Benefex",orderId:"074ef8cf-a17f-475a-9543-0c13f7a208e7",planned:"",confirmed:"7/31/2024",delivery:"",ior:"Truelog",invoice:"",taxes:"$133.52",brokerage:"$150.00",fixed:"$300.00",variable:"$0.00",handling:"$46.68",quote:"$630.20",fbCost:"$630.20",items:[{country:"Singapore",item:"ThinkPad T14 Gen 3 14\" i5 16GB RAM 256GB SSD (21AH00BQUS)",count:1,weight:6,value:"$1,669.00"}]},
+  // ══ AUGUST 2024 ══
+  {month:"August 2024",num:17,client:"Fortis Games",orderId:"a54ad8e6-01cb-4565-8343-8d761178eed6",planned:"",confirmed:"",delivery:"8/14/2024",ior:"IOR Direct",invoice:"",taxes:"$839.79",brokerage:"$500.00",fixed:"$1,500.00",variable:"$0.00",handling:"$227.18",quote:"$3,066.97",fbCost:"$3,066.97",items:[{country:"Colombia",item:"MacBook Pro 16\" M3 Max 16-Core CPU 40-Core GPU 48GB RAM 1TB SSD - US / English - Space Black - US/CA Plug",count:1,weight:9,value:"$3,999.00"}]},
+  {month:"August 2024",num:18,client:"Fortis Games",orderId:"8faa62c4-76a4-4692-abbe-74c6e3d675db",planned:"",confirmed:"",delivery:"8/17/2024",ior:"IOR Direct",invoice:"",taxes:"$839.79",brokerage:"$500.00",fixed:"$1,500.00",variable:"$0.00",handling:"$227.18",quote:"$3,066.97",fbCost:"$3,066.97",items:[{country:"Colombia",item:"MacBook Pro 16\" M3 Max 16-Core CPU 40-Core GPU 48GB RAM 1TB SSD - US / English - Space Black - US/CA Plug",count:1,weight:9,value:"$3,999.00"}]},
+  {month:"August 2024",num:19,client:"SUI Foundation",orderId:"8814ca04-83af-43dd-a299-a3dd2c4278a9",planned:"",confirmed:"",delivery:"8/20/2024",ior:"Truelog",invoice:"",taxes:"$273.42",brokerage:"$250.00",fixed:"$300.00",variable:"$0.00",handling:"$65.87",quote:"$889.29",fbCost:"$889.29",items:[{country:"South Korea",item:"MacBook Air 13\" M3 8-Core CPU 10-Core GPU 16GB RAM 512GB SSD",count:1,weight:6,value:"$1,518.99"}]},
+  {month:"August 2024",num:20,client:"Verint Systems",orderId:"81b84496-8b35-42c6-b243-706f40634dfe",planned:"",confirmed:"",delivery:"8/17/2024",ior:"Truelog",invoice:"",taxes:"$7.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.10",fbCost:"$386.10",items:[{country:"Canada",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"August 2024",num:21,client:"Verint Systems",orderId:"efec7ebc-8d69-4f12-9b0d-95ea2907dfde",planned:"",confirmed:"",delivery:"8/16/2024",ior:"Truelog",invoice:"",taxes:"$12.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.00",quote:"$391.45",fbCost:"$391.45",items:[{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"}]},
+  {month:"August 2024",num:22,client:"Verint Systems",orderId:"45653e54-835d-429e-961a-27fec1cbca81",planned:"",confirmed:"",delivery:"8/31/2024",ior:"Truelog",invoice:"",taxes:"$26.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.12",quote:"$406.57",fbCost:"$406.57",items:[{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"},{country:"Canada",item:"ERGO K860 Ergonomic Split Keyboard - US / English",count:1,weight:6,value:"$129.99"},{country:"Canada",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"August 2024",num:23,client:"Verint Systems",orderId:"33e98869-011f-4ac7-aa22-aeb40fd3717b",planned:"",confirmed:"",delivery:"8/31/2024",ior:"Truelog",invoice:"",taxes:"$65.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$33.20",quote:"$448.20",fbCost:"$448.20",items:[{country:"Canada",item:"ThinkPad T14 14\" (Gen 4) i5 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,300.00"}]},
+  {month:"August 2024",num:24,client:"Verint Systems",orderId:"141311cc-c3d7-4d32-bcf6-b45d2ea23e64",planned:"",confirmed:"",delivery:"8/31/2024",ior:"Truelog",invoice:"",taxes:"$65.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$33.20",quote:"$448.20",fbCost:"$448.20",items:[{country:"Canada",item:"ThinkPad T14 14\" (Gen 4) i5 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,300.00"}]},
+  // ══ SEPTEMBER 2024 ══
+  {month:"September 2024",num:25,client:"Verint Systems",orderId:"6daee35f-a09d-4e60-a297-8d7eac8f4c26",planned:"",confirmed:"9/3/2024",delivery:"",ior:"Truelog",invoice:"",taxes:"$4.70",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.38",quote:"$383.08",fbCost:"$383.08",items:[{country:"Canada",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"},{country:"Canada",item:"Mousepad with Gel Pad Wrist Rest - Bullet Black",count:1,weight:2,value:"$14.05"}]},
+  {month:"September 2024",num:26,client:"Verint Systems",orderId:"7ccbe5a7-cf48-4470-a460-f2ada8547691",planned:"",confirmed:"9/3/2024",delivery:"",ior:"Truelog",invoice:"",taxes:"$18.70",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.50",quote:"$398.20",fbCost:"$398.20",items:[{country:"Canada",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"},{country:"Canada",item:"Mousepad with Gel Pad Wrist Rest - Bullet Black",count:1,weight:2,value:"$14.05"},{country:"Canada",item:"ERGO K860 Ergonomic Split Keyboard - US / English",count:1,weight:6,value:"$129.99"},{country:"Canada",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"September 2024",num:27,client:"MoonPay",orderId:"COT-14102",planned:"",confirmed:"9/16/2024",delivery:"",ior:"M&B",invoice:"",taxes:"$495.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$67.60",quote:"$912.60",fbCost:"$912.60",items:[{country:"United Kingdom",item:"Any Laptop",count:9,weight:81,value:"$9,900.00"}]},
+  {month:"September 2024",num:28,client:"MoonPay",orderId:"COT-14102",planned:"",confirmed:"9/16/2024",delivery:"",ior:"M&B",invoice:"",taxes:"$715.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$85.20",quote:"$1,150.20",fbCost:"$1,150.20",items:[{country:"European Union",item:"Any Laptop",count:13,weight:117,value:"$14,300.00"}]},
+  {month:"September 2024",num:29,client:"Verint Systems",orderId:"bd8ebc67-c677-4a1d-bb4a-5c2aba58647d",planned:"",confirmed:"10/1/2024",delivery:"",ior:"TrueLog",invoice:"",taxes:"$7.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.10",fbCost:"$386.10",items:[{country:"Canada",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"September 2024",num:30,client:"Verint Systems",orderId:"d0bf4abe-4cc1-4ba6-a2c9-5184d24f6b4f",planned:"",confirmed:"10/1/2024",delivery:"",ior:"TrueLog",invoice:"",taxes:"$7.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.10",fbCost:"$386.10",items:[{country:"Canada",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"September 2024",num:31,client:"Verint Systems",orderId:"d0bf4abe-4cc1-4ba6-a2c9-5184d24f6b4f",planned:"",confirmed:"10/1/2024",delivery:"",ior:"TrueLog",invoice:"",taxes:"$7.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.10",fbCost:"$386.10",items:[{country:"Canada",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"September 2024",num:32,client:"Verint Systems",orderId:"1e052e72-a9ef-47d7-bcda-ba9bc70fa725",planned:"",confirmed:"9/18/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$7.20",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.58",quote:"$385.78",fbCost:"$385.78",items:[{country:"Brazil",item:"ERGO K860 Ergonomic Split Keyboard - US / English",count:1,weight:6,value:"$129.99"},{country:"Brazil",item:"Mousepad with Gel Pad Wrist Rest - Bullet Black",count:1,weight:2,value:"$14.05"}]},
+  // ══ OCTOBER 2024 ══
+  {month:"October 2024",num:33,client:"Sift",orderId:"a48f267a-d33a-44f5-93ad-31e539843733",planned:"",confirmed:"10/4/2024",delivery:"",ior:"TrueLog",invoice:"",taxes:"$154.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$40.40",quote:"$545.35",fbCost:"$545.35",items:[{country:"Canada",item:"MacBook Pro 16\" M3 Pro 12-Core CPU 18-Core GPU 36GB RAM 1TB SSD - US / English - Space Black - US/CA Plug",count:1,weight:9,value:"$3,099.00"}]},
+  {month:"October 2024",num:34,client:"Verint Systems",orderId:"f69ebb69-e510-436d-8647-6e61db8f9334",planned:"",confirmed:"10/25/2024",delivery:"",ior:"TrueLog",invoice:"",taxes:"$5.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.40",quote:"$383.40",fbCost:"$383.40",items:[{country:"Canada",item:"ThinkVision T24i-30 - 23.8\" Monitor",count:1,weight:16,value:"$100.00"}]},
+  {month:"October 2024",num:35,client:"Verint Systems",orderId:"70562a9e-61a7-400e-9fbb-2794dee1696a",planned:"",confirmed:"11/1/2024",delivery:"11/4/2024",ior:"TrueLog",invoice:"",taxes:"$32.40",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.59",quote:"$412.99",fbCost:"$412.99",items:[{country:"Canada",item:"ThinkVision P24h-30 24\" Monitor",count:1,weight:16,value:"$249.00"},{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"},{country:"Canada",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"October 2024",num:36,client:"Verint Systems",orderId:"5dd94433-9ff9-4239-8c19-90f70fd71395",planned:"",confirmed:"11/1/2024",delivery:"11/4/2024",ior:"TrueLog",invoice:"",taxes:"$12.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.00",quote:"$391.45",fbCost:"$391.45",items:[{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"}]},
+  {month:"October 2024",num:37,client:"Verint Systems",orderId:"aef9a963-037e-4d31-95ae-3e007c33c269",planned:"",confirmed:"11/1/2024",delivery:"11/4/2024",ior:"TrueLog",invoice:"",taxes:"$12.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.00",quote:"$391.45",fbCost:"$391.45",items:[{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"}]},
+  {month:"October 2024",num:38,client:"Verint Systems",orderId:"e97f9fc0-e33f-4f03-940a-5b32bd78b51d",planned:"",confirmed:"",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$127.39",brokerage:"$500.00",fixed:"$2,000.00",variable:"$0.00",handling:"$210.19",quote:"$2,837.58",fbCost:"$2,837.58",items:[{country:"Brazil",item:"ERGO K860 Ergonomic Split Keyboard - US / English",count:1,weight:6,value:"$129.99"}]},
+  // ══ NOVEMBER 2024 ══
+  {month:"November 2024",num:39,client:"Verint Systems",orderId:"ab01fe8a-1fa3-472d-ae7a-a1a59fa13ac2",planned:"",confirmed:"11/13/2024",delivery:"11/14/2024",ior:"TrueLog",invoice:"",taxes:"$12.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.00",quote:"$391.45",fbCost:"$391.45",items:[{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"}]},
+  {month:"November 2024",num:40,client:"Verint Systems",orderId:"d6d0392d-fd26-4b55-8672-1f20b8bdd2bb",planned:"",confirmed:"11/25/2024",delivery:"11/26/2024",ior:"TrueLog",invoice:"",taxes:"$65.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$33.20",quote:"$448.20",fbCost:"$448.20",items:[{country:"Canada",item:"ThinkPad T14 14\" (Gen 5) Ultra 5 135U 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,300.00"}]},
+  {month:"November 2024",num:41,client:"Verint Systems",orderId:"4d268551-c9d1-4538-8d1c-244f3a47a6c7",planned:"",confirmed:"11/25/2024",delivery:"11/26/2024",ior:"TrueLog",invoice:"",taxes:"$65.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$33.20",quote:"$448.20",fbCost:"$448.20",items:[{country:"Canada",item:"ThinkPad T14 14\" (Gen 5) Ultra 5 135U 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,300.00"}]},
+  {month:"November 2024",num:42,client:"Verint Systems",orderId:"9fc3e9ed-8861-4f16-adc0-fa9a6e5c0b0c",planned:"",confirmed:"11/25/2024",delivery:"11/26/2024",ior:"TrueLog",invoice:"",taxes:"$22.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.76",quote:"$401.76",fbCost:"$401.76",items:[{country:"Canada",item:"ThinkPad Thunderbolt 4 Workstation Dock",count:1,weight:4,value:"$439.99"}]},
+  {month:"November 2024",num:43,client:"Verint Systems",orderId:"1c2d3b89-912c-4e5b-b7a7-cad1f9b5a803",planned:"",confirmed:"11/25/2024",delivery:"11/27/2024",ior:"TrueLog",invoice:"",taxes:"$12.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.00",quote:"$391.45",fbCost:"$391.45",items:[{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"}]},
+  // ══ DECEMBER 2024 ══
+  {month:"December 2024",num:44,client:"Verint Systems",orderId:"24e94af8-3fc2-46c4-8fb9-e463b66fdbea",planned:"",confirmed:"12/11/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$65.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$33.20",quote:"$448.20",fbCost:"$448.20",items:[{country:"Mexico",item:"ThinkPad T14 14\" (Gen 5) Ultra 5 135U 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,300.00"}]},
+  {month:"December 2024",num:45,client:"Verint Systems",orderId:"e5e39b10-0525-4f55-a1a3-6c0c342b3263",planned:"",confirmed:"12/11/2024",delivery:"12/13/2024",ior:"TrueLog",invoice:"",taxes:"$65.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$33.20",quote:"$448.20",fbCost:"$448.20",items:[{country:"Canada",item:"ThinkPad T14 14\" (Gen 5) Ultra 5 135U 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,300.00"}]},
+  {month:"December 2024",num:46,client:"Verint Systems",orderId:"7d5b7f6f-af11-4eaa-8a55-b8cf3ea1b8e6",planned:"",confirmed:"12/11/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$40.20",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$31.22",quote:"$421.42",fbCost:"$421.42",items:[{country:"Brazil",item:"Voyager Bluetooth On Ear Headset w/ USB Type-A Adapter",count:1,weight:2,value:"$129.99"},{country:"Brazil",item:"Backpack Amped Checkpoint-Friendly Compu-Backpack",count:1,weight:4,value:"$150.00"},{country:"Brazil",item:"MX Master 3 Mouse",count:1,weight:1,value:"$99.99"},{country:"Brazil",item:"ThinkPad Universal USB-C Dock",count:1,weight:3,value:"$239.99"},{country:"Brazil",item:"ERGO K860 Ergonomic Split Keyboard - US / English",count:1,weight:6,value:"$129.99"},{country:"Brazil",item:"Mousepad with Gel Pad Wrist Rest - Bullet Black",count:1,weight:2,value:"$14.05"},{country:"Brazil",item:"World Travel Power Adapter",count:1,weight:1,value:"$39.99"}]},
+  {month:"December 2024",num:47,client:"Verint Systems",orderId:"e4ae28df-6c1e-4e49-9f92-f308873b1c4f",planned:"",confirmed:"12/11/2024",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$91.70",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$35.34",quote:"$477.04",fbCost:"$477.04",items:[{country:"Brazil",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"},{country:"Brazil",item:"Mousepad with Gel Pad Wrist Rest - Bullet Black",count:1,weight:2,value:"$14.05"},{country:"Brazil",item:"ThinkPad T14 14\" (Gen 5) Ultra 5 135U 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,300.00"},{country:"Brazil",item:"ThinkPad Universal USB-C Dock",count:1,weight:3,value:"$239.99"},{country:"Brazil",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"}]},
+  // ══ JANUARY 2025 ══
+  {month:"January 2025",num:48,client:"Verint Systems",orderId:"4e00ebd5-c034-4129-878e-01d2a1ccfaf1",planned:"",confirmed:"1/15/2025",delivery:"1/17/2025",ior:"TrueLog",invoice:"",taxes:"$29.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.40",quote:"$410.35",fbCost:"$410.35",items:[{country:"Canada",item:"ThinkVision T27hv-30 27\" Monitor",count:1,weight:24,value:"$599.00"}]},
+  {month:"January 2025",num:49,client:"Verint Systems",orderId:"a5f756e1-2677-4577-9517-17942a03d17c",planned:"",confirmed:"1/22/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$29.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.40",quote:"$410.35",fbCost:"$410.35",items:[{country:"Brazil",item:"ThinkVision T27hv-30 27\" Monitor",count:1,weight:24,value:"$599.00"}]},
+  {month:"January 2025",num:50,client:"Verint Systems",orderId:"8b870221-11e5-4805-af1e-6659496b56c0",planned:"",confirmed:"1/22/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$7.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.10",fbCost:"$386.10",items:[{country:"Brazil",item:"Desk Mat Studio Series - mouse pad",count:1,weight:1,value:"$19.99"},{country:"Brazil",item:"ERGO K860 Ergonomic Split Keyboard - US / English",count:1,weight:6,value:"$129.99"}]},
+  // ══ FEBRUARY 2025 ══
+  {month:"February 2025",num:51,client:"Verint Systems",orderId:"1f864270-e0e7-4b48-b79f-43dc34ef0552",planned:"",confirmed:"2/26/2025",delivery:"2/28/2025",ior:"TrueLog",invoice:"",taxes:"$12.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.96",quote:"$390.96",fbCost:"$390.96",items:[{country:"Canada",item:"World Travel Power Adapter",count:1,weight:1,value:"$39.99"},{country:"Canada",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"}]},
+  {month:"February 2025",num:52,client:"Verint Systems",orderId:"8bb62c21-e34e-45e5-9e4c-b233b0f934cc",planned:"",confirmed:"2/26/2025",delivery:"2/27/2025",ior:"TrueLog",invoice:"",taxes:"$14.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.20",quote:"$394.15",fbCost:"$394.15",items:[{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"},{country:"Canada",item:"Dual Wireless Charging Pad",count:1,weight:1,value:"$49.99"}]},
+  {month:"February 2025",num:53,client:"Verint Systems",orderId:"1f0b990f-8e8c-48e0-8179-e4319f2279ce",planned:"",confirmed:"2/26/2025",delivery:"3/4/2025",ior:"TrueLog",invoice:"",taxes:"$17.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.36",quote:"$396.36",fbCost:"$396.36",items:[{country:"Canada",item:"ThinkPad Universal USB-C Dock",count:1,weight:3,value:"$239.99"},{country:"Canada",item:"MX Master 3 Mouse",count:1,weight:1,value:"$99.99"}]},
+  {month:"February 2025",num:54,client:"Mysten Labs",orderId:"3a3ea0ea-9042-487f-b630-cf2a5daee8f8",planned:"",confirmed:"2/28/2025",delivery:"3/5/2025",ior:"TrueLog",invoice:"",taxes:"$74.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$34.00",quote:"$458.95",fbCost:"$458.95",items:[{country:"South Korea",item:"MacBook Air 13\" M3 8-Core CPU 10-Core GPU 24GB RAM 512GB SSD",count:1,weight:6,value:"$1,499.00"}]},
+  // ══ MARCH 2025 ══
+  {month:"March 2025",num:55,client:"SentinelOne",orderId:"e7438660-8861-4380-966b-81298a78b24c",planned:"",confirmed:"3/5/2025",delivery:"",ior:"TrueLog",invoice:"",taxes:"$159.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$40.80",quote:"$550.75",fbCost:"$550.75",items:[{country:"Saudi Arabia",item:"MacBook Pro 14\" M4 Max 14-Core CPU 32-Core GPU 36GB RAM 1TB SSD",count:1,weight:7,value:"$3,199.00"}]},
+  {month:"March 2025",num:56,client:"Verint Systems",orderId:"561933f9-6fec-4d99-958d-9ba56c8ac28e",planned:"",confirmed:"3/6/2025",delivery:"3/10/2025",ior:"TrueLog",invoice:"",taxes:"$10.60",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.85",quote:"$389.45",fbCost:"$389.45",items:[{country:"Canada",item:"Evolve2 65 UC Wireless Headphones USB-C",count:1,weight:1,value:"$212.00"}]},
+  {month:"March 2025",num:57,client:"Verint Systems",orderId:"71c45857-3190-41c9-8e36-bac320710748",planned:"",confirmed:"3/6/2025",delivery:"3/10/2025",ior:"TrueLog",invoice:"",taxes:"$7.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.10",fbCost:"$386.10",items:[{country:"Canada",item:"Samsonite Cablewood Laptop Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"March 2025",num:58,client:"Verint Systems",orderId:"7c6b1569-e406-4985-a546-70c6938d6d73",planned:"",confirmed:"3/6/2025",delivery:"3/10/2025",ior:"TrueLog",invoice:"",taxes:"$7.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.10",fbCost:"$386.10",items:[{country:"Canada",item:"Samsonite Cablewood Laptop Backpack",count:1,weight:4,value:"$150.00"}]},
+  {month:"March 2025",num:59,client:"Verint Systems",orderId:"0c4740c9-632e-4347-8665-a54f97ea9c74",planned:"",confirmed:"3/13/2025",delivery:"3/14/2025",ior:"TrueLog",invoice:"",taxes:"$41.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$31.36",quote:"$423.31",fbCost:"$423.31",items:[{country:"Canada",item:"Samsonite Cablewood Laptop Backpack",count:1,weight:4,value:"$150.00"},{country:"Canada",item:"ThinkPad Thunderbolt 4 Workstation Dock",count:1,weight:4,value:"$439.99"},{country:"Canada",item:"Apple AirPodsPro 2nd Gen",count:1,weight:2,value:"$249.00"}]},
+  {month:"March 2025",num:60,client:"Verint Systems",orderId:"2db6f88e-d197-4b94-8d53-96a8ead11696",planned:"",confirmed:"3/20/2025",delivery:"3/25/2025",ior:"TrueLog",invoice:"",taxes:"$17.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.40",quote:"$396.90",fbCost:"$396.90",items:[{country:"Canada",item:"MX Master 3 Mouse",count:1,weight:1,value:"$99.99"},{country:"Canada",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"},{country:"Canada",item:"Dual Wireless Charging Pad",count:1,weight:1,value:"$49.99"}]},
+  {month:"March 2025",num:61,client:"Verint Systems",orderId:"ca414fd1-6b24-4a9a-8a58-9a4492fd1e14",planned:"",confirmed:"3/21/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$10.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.80",quote:"$388.80",fbCost:"$388.80",items:[{country:"Brazil",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"}]},
+  {month:"March 2025",num:62,client:"Verint Systems",orderId:"d88f7ba9-f570-4b08-97ac-2910ef61cecd",planned:"",confirmed:"3/28/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$4.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.32",quote:"$382.32",fbCost:"$382.32",items:[{country:"Brazil",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"}]},
+  // ══ APRIL 2025 ══
+  {month:"April 2025",num:63,client:"Verint Systems",orderId:"99457fbf-8243-4d7e-be14-8ac8b70eee0c",planned:"",confirmed:"4/4/2025",delivery:"4/9/2025",ior:"TrueLog",invoice:"",taxes:"$100.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$36.00",quote:"$486.00",fbCost:"$486.00",items:[{country:"Canada",item:"ThinkPad X1 Carbon Gen 12 13-inch Ultra 7 165U 32GB RAM 256GB SSD",count:1,weight:6,value:"$2,000.00"}]},
+  {month:"April 2025",num:64,client:"Verint Systems",orderId:"bfca7324-25ac-4ed0-964a-96cbbfe9e370",planned:"",confirmed:"4/10/2025",delivery:"4/11/2025",ior:"TrueLog",invoice:"",taxes:"$12.75",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.02",quote:"$391.77",fbCost:"$391.77",items:[{country:"Canada",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"},{country:"Canada",item:"Adjustable Laptop Stand Steel and Aluminum",count:1,weight:9,value:"$55.00"}]},
+  {month:"April 2025",num:65,client:"Verint Systems",orderId:"3dac3c01-0b79-40f0-9ae7-ed8db0fc0742",planned:"",confirmed:"4/10/2025",delivery:"4/11/2025",ior:"TrueLog",invoice:"",taxes:"$10.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.80",quote:"$388.80",fbCost:"$388.80",items:[{country:"Canada",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"}]},
+  {month:"April 2025",num:66,client:"Verint Systems",orderId:"aaf7292e-2f24-4ec2-a804-4f6c1b97c1e6",planned:"",confirmed:"4/15/2025",delivery:"4/17/2025",ior:"TrueLog",invoice:"",taxes:"$10.60",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.85",quote:"$389.45",fbCost:"$389.45",items:[{country:"Canada",item:"Evolve2 65 UC Wireless Headphones USB-C",count:1,weight:1,value:"$212.00"}]},
+  {month:"April 2025",num:67,client:"Verint Systems",orderId:"d30c7bdb-ced8-4391-a820-d773fe2dbbcf",planned:"",confirmed:"4/18/2025",delivery:"4/23/2025",ior:"TrueLog",invoice:"",taxes:"$115.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$37.20",quote:"$502.20",fbCost:"$502.20",items:[{country:"Canada",item:"MacBook Pro 14-inch M3 Pro 11-Core CPU 14-Core GPU 36GB RAM 1TB SSD - US English KB - Space Black - US/CA Plug",count:1,weight:7,value:"$2,300.00"}]},
+  {month:"April 2025",num:68,client:"Verint Systems",orderId:"7b5c4fc2-5da8-46d1-ab25-2c10b1d24e53",planned:"",confirmed:"4/18/2025",delivery:"4/23/2025",ior:"TrueLog",invoice:"",taxes:"$25.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.08",quote:"$406.03",fbCost:"$406.03",items:[{country:"Canada",item:"27\" VOIP Monitor (Dell)",count:1,weight:24,value:"$519.00"}]},
+  {month:"April 2025",num:69,client:"Verint Systems",orderId:"20974f34-bc83-43de-93f0-e5e422fd81a9",planned:"",confirmed:"4/14/2025",delivery:"4/28/2025",ior:"IOR Direct",invoice:"",taxes:"$28.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.28",quote:"$408.73",fbCost:"$408.73",items:[{country:"Brazil",item:"Dual Wireless Charging Pad",count:1,weight:1,value:"$49.99"},{country:"Brazil",item:"27\" VOIP Monitor (Dell)",count:1,weight:24,value:"$519.00"}]},
+  {month:"April 2025",num:70,client:"SentinelOne",orderId:"91e8193a-02f8-400e-9ada-0ae62d6784be",planned:"",confirmed:"4/29/2025",delivery:"",ior:"TrueLog",invoice:"",taxes:"$159.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$40.80",quote:"$550.75",fbCost:"$550.75",items:[{country:"Switzerland",item:"MacBook Pro 14-inch M4 Max 14-Core CPU 32-Core GPU 36GB RAM 1TB SSD - US English KB - Silver - US/CA Plug",count:1,weight:7,value:"$3,199.00"}]},
+  // ══ MAY 2025 ══
+  {month:"May 2025",num:71,client:"Verint Systems",orderId:"df1ceaf9-c6bb-4095-8bac-d5c78e2bdec9",planned:"",confirmed:"5/5/2025",delivery:"5/7/2025",ior:"TrueLog",invoice:"",taxes:"$115.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$37.20",quote:"$502.20",fbCost:"$502.20",items:[{country:"Canada",item:"MacBook Pro 14-inch M3 Pro 11-Core CPU 14-Core GPU 36GB RAM 1TB SSD - US English KB - Space Black - US/CA Plug",count:1,weight:7,value:"$2,300.00"}]},
+  {month:"May 2025",num:72,client:"Verint Systems",orderId:"735d1b95-cc3d-4363-b777-e46e0c898ea4",planned:"",confirmed:"5/5/2025",delivery:"5/26/2025",ior:"IOR Direct",invoice:"",taxes:"$19.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.52",quote:"$398.52",fbCost:"$398.52",items:[{country:"Brazil",item:"24\" HD Video Conferencing Monitor - C2422HE",count:1,weight:20,value:"$379.99"}]},
+  {month:"May 2025",num:73,client:"Verint Systems",orderId:"83cebb30-e809-4122-bf37-48bf5c123e70",planned:"",confirmed:"5/8/2025",delivery:"5/12/2025",ior:"TrueLog",invoice:"",taxes:"$26.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.08",quote:"$406.08",fbCost:"$406.08",items:[{country:"Canada",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"},{country:"Canada",item:"ThinkPad Thunderbolt 4 Workstation Dock",count:1,weight:4,value:"$439.99"}]},
+  {month:"May 2025",num:74,client:"Verint Systems",orderId:"930891ef-39e6-4732-892d-d15d791a7d94",planned:"",confirmed:"5/19/2025",delivery:"5/21/2025",ior:"TrueLog",invoice:"",taxes:"$115.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$37.20",quote:"$502.20",fbCost:"$502.20",items:[{country:"Canada",item:"MacBook Pro 14-inch M3 Pro 11-Core CPU 14-Core GPU 36GB RAM 1TB SSD - US English KB - Space Black - US/CA Plug",count:1,weight:7,value:"$2,300.00"}]},
+  {month:"May 2025",num:75,client:"Brightwheel",orderId:"65839798-2774-4cae-b733-ed45d85f1970",planned:"",confirmed:"5/22/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$154.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$40.40",quote:"$545.35",fbCost:"$545.35",items:[{country:"Brazil",item:"MacBook Pro 16\" M3 Pro 12-Core CPU 18-Core GPU 36GB RAM 512GB SSD - US / English - Silver - US/CA Plug",count:1,weight:9,value:"$3,099.00"}]},
+  {month:"May 2025",num:76,client:"SentinelOne",orderId:"88eda6ef-696b-4181-afc8-9f96813ef7c8",planned:"",confirmed:"5/30/2025",delivery:"",ior:"TrueLog",invoice:"",taxes:"$94.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$35.56",quote:"$480.01",fbCost:"$480.01",items:[{country:"Switzerland",item:"Latitude 7420 14-inch Ultra 7 165U vPro Enterprise 32GB RAM 512GB SSD",count:1,weight:6,value:"$1,889.00"}]},
+  // ══ JUNE 2025 ══
+  {month:"June 2025",num:77,client:"SentinelOne",orderId:"c8b38b2d-faf8-4119-906e-e4a539d88b40",planned:"",confirmed:"6/2/2025",delivery:"6/17/2025",ior:"TrueLog",invoice:"",taxes:"$159.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$40.80",quote:"$550.75",fbCost:"$550.75",items:[{country:"South Africa",item:"MacBook Pro 14-inch M4 Max 14-Core CPU 32-Core GPU 36GB RAM 1TB SSD - US English KB - Silver - US/CA Plug",count:1,weight:7,value:"$3,199.00"}]},
+  {month:"June 2025",num:78,client:"Verint Systems, Inc.",orderId:"8e59b936-8c37-4460-9351-aca5aec1c3e4",planned:"",confirmed:"6/11/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$4.70",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.38",quote:"$383.08",fbCost:"$383.08",items:[{country:"Brazil",item:"Mousepad with Gel Pad Wrist Rest - Bullet Black",count:1,weight:2,value:"$14.05"},{country:"Brazil",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"}]},
+  {month:"June 2025",num:79,client:"SentinelOne",orderId:"85fc8820-3540-4ed9-9e00-05167e024fca",planned:"",confirmed:"6/6/2025",delivery:"6/12/2025",ior:"TrueLog",invoice:"",taxes:"$159.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$40.80",quote:"$550.75",fbCost:"$550.75",items:[{country:"Canada",item:"MacBook Pro 14-inch M4 Max 14-Core CPU 32-Core GPU 36GB RAM 1TB SSD - US English KB - Silver - US/CA Plug",count:1,weight:7,value:"$3,199.00"}]},
+  {month:"June 2025",num:80,client:"AppDirect",orderId:"Swag Shipment to User (Off Platform)",planned:"",confirmed:"",delivery:"",ior:"Flavor Cloud",invoice:"",taxes:"$15.10",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.21",quote:"$394.31",fbCost:"$394.31",items:[{country:"Canada",item:"MARINE LAYER Pullover Hoodie",count:1,weight:1,value:"$84.00"},{country:"Canada",item:"New Era Black Hat",count:1,weight:1,value:"$14.00"},{country:"Canada",item:"Pacific Grey Hat",count:1,weight:1,value:"$14.00"},{country:"Canada",item:"Kids Three-Quarter Sleeve Raglan T-Shirt",count:1,weight:1,value:"$12.00"},{country:"Canada",item:"Allbirds socks",count:1,weight:1,value:"$16.00"},{country:"Canada",item:"Stripe sock",count:2,weight:2,value:"$32.00"},{country:"Canada",item:"Allbirds Trainers",count:1,weight:3,value:"$130.00"}]},
+  {month:"June 2025",num:81,client:"Life 360",orderId:"e5026505-9496-4c4a-94c9-88e170fae9c5",planned:"",confirmed:"6/17/2025",delivery:"Not delivered. Lost",ior:"IOR Direct",invoice:"",taxes:"$174.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$42.00",quote:"$566.95",fbCost:"$566.95",items:[{country:"Uruguay",item:"MacBook Pro 16-inch M4 Max 14-Core CPU 32-Core GPU 36GB RAM 1TB SSD",count:1,weight:9,value:"$3,499.00"}]},
+  {month:"June 2025",num:82,client:"AppDirect",orderId:"4312d18e-b517-40fb-af61-3c74144781b5",planned:"",confirmed:"6/30/2025",delivery:"7/9/2025",ior:"Flavor Cloud",invoice:"",taxes:"$213.40",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$45.07",quote:"$608.48",fbCost:"$608.48",items:[{country:"Canada",item:"Logitech Rally Plus UHD 4K Conference Camera System",count:1,weight:12,value:"$2,599.09"},{country:"Canada",item:"Rally Mounting Kit",count:1,weight:4,value:"$149.99"},{country:"Canada",item:"TAP Touch Meeting Room Controller",count:1,weight:1,value:"$1,099.00"},{country:"Canada",item:"Logitech PC Mount",count:1,weight:2,value:"$119.99"},{country:"Canada",item:"Logitech Rally MIC Pod Hub",count:1,weight:1,value:"$299.99"}]},
+  // ══ JULY 2025 ══
+  {month:"July 2025",num:83,client:"Verint",orderId:"ac4eaf5a-962d-4d18-9315-5a10820f37a0",planned:"",confirmed:"7/23/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$2.21",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.18",quote:"$380.38",fbCost:"$380.38",items:[{country:"Brazil",item:"ERGO M575 Trackball",count:1,weight:1,value:"$44.10"}]},
+  {month:"July 2025",num:84,client:"Verint",orderId:"a186d437-b075-4bdb-ae0b-1212eaf3d9ed",planned:"",confirmed:"7/23/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$5.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.48",quote:"$384.43",fbCost:"$384.43",items:[{country:"Brazil",item:"Apple AirPods 4",count:1,weight:2,value:"$119.00"}]},
+  {month:"July 2025",num:85,client:"Verint",orderId:"068a63d0-1a77-4c3d-b6fc-ce1763ea6bf4",planned:"",confirmed:"7/21/2025",delivery:"7/24/2025",ior:"FlavorCloud",invoice:"",taxes:"$5.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.48",quote:"$384.43",fbCost:"$384.43",items:[{country:"Canada",item:"Apple AirPods 4",count:1,weight:2,value:"$119.00"}]},
+  {month:"July 2025",num:86,client:"Verint",orderId:"45b6f75e-e57e-483b-b4bb-e10d5d875b4f",planned:"",confirmed:"7/21/2025",delivery:"7/24/2025",ior:"FlavorCloud",invoice:"",taxes:"$5.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.48",quote:"$384.43",fbCost:"$384.43",items:[{country:"Canada",item:"Apple AirPods 4",count:1,weight:2,value:"$119.00"}]},
+  {month:"July 2025",num:87,client:"Verint",orderId:"cdd5764a-d8fb-41fb-a9b3-c8de115f4c0b",planned:"",confirmed:"7/21/2025",delivery:"7/28/2025",ior:"FlavorCloud",invoice:"",taxes:"$41.90",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$31.35",quote:"$423.25",fbCost:"$423.25",items:[{country:"Canada",item:"Apple AirPods 4",count:1,weight:2,value:"$119.00"},{country:"Canada",item:"27\" VOIP Monitor (Dell)",count:1,weight:24,value:"$519.00"},{country:"Canada",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"}]},
+  {month:"July 2025",num:88,client:"Verint",orderId:"acf683ff-d0b6-49b2-b0de-004868736fda",planned:"",confirmed:"7/25/2025",delivery:"7/31/2025",ior:"FlavorCloud",invoice:"",taxes:"$22.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.76",quote:"$401.76",fbCost:"$401.76",items:[{country:"Canada",item:"ThinkPad Thunderbolt 4 Workstation Dock",count:1,weight:4,value:"$439.99"}]},
+  {month:"July 2025",num:89,client:"Verint",orderId:"8afb5799-9f77-43f0-bb13-2f59bcf916f7",planned:"",confirmed:"7/25/2025",delivery:"7/31/2025",ior:"FlavorCloud",invoice:"",taxes:"$54.65",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$32.37",quote:"$437.03",fbCost:"$437.03",items:[{country:"Canada",item:"ERGO K860 Ergonomic Split Keyboard - US / English",count:1,weight:6,value:"$129.99"},{country:"Canada",item:"Dual Wireless Charging Pad",count:1,weight:1,value:"$49.99"},{country:"Canada",item:"ERGO M575 Trackball",count:1,weight:1,value:"$44.10"},{country:"Canada",item:"27\" VOIP Monitor (Dell)",count:1,weight:24,value:"$519.00"},{country:"Canada",item:"DeskJet 4155e Wireless Color Inkjet All-in-One Printer",count:1,weight:15,value:"$99.99"},{country:"Canada",item:"Elite 85H Over-ear Headphones",count:1,weight:3,value:"$249.99"}]},
+  {month:"July 2025",num:90,client:"Verint",orderId:"6088e8b9-6e7e-41e2-a77b-13e9ef95be48",planned:"",confirmed:"7/28/2025",delivery:"7/31/2025",ior:"FlavorCloud",invoice:"",taxes:"$2.75",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.22",quote:"$380.97",fbCost:"$380.97",items:[{country:"Canada",item:"Adjustable Laptop Stand Steel and Aluminum",count:1,weight:9,value:"$55.00"}]},
+  {month:"July 2025",num:91,client:"AppDirect",orderId:"32a83c35-3247-4b2e-9bd3-65c8504b0266",planned:"",confirmed:"7/30/2025",delivery:"ETA- 8/6/25",ior:"FlavorCloud",invoice:"",taxes:"$230.53",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$46.44",quote:"$626.97",fbCost:"$626.97",items:[{country:"Canada",item:"Surface Laptop Studio 2 14.4-inch i7-13700H 64GB RAM 2TB",count:1,weight:9,value:"$4,319.99"},{country:"Canada",item:"Surface Thunderbolt 4 Dock for Business",count:1,weight:4,value:"$189.99"},{country:"Canada",item:"Microsoft Surface Slim Pen 2 - Matte black",count:1,weight:1,value:"$100.59"}]},
+  {month:"July 2025",num:92,client:"Verint",orderId:"66fd3801-1c10-403c-b987-fbac8a89ed4c",planned:"",confirmed:"7/30/2025",delivery:"ETA- 8/6/25",ior:"FlavorCloud",invoice:"",taxes:"$22.20",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.78",quote:"$401.98",fbCost:"$401.98",items:[{country:"Canada",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"},{country:"Canada",item:"Samsonite Cablewood Laptop Backpack",count:1,weight:4,value:"$150.00"},{country:"Canada",item:"ERGO M575 Trackball",count:1,weight:1,value:"$44.10"},{country:"Canada",item:"Dual Wireless Charging Pad",count:1,weight:1,value:"$49.99"}]},
+  // ══ AUGUST 2025 ══
+  {month:"August 2025",num:93,client:"Verint",orderId:"8b70195c-f88f-4f3a-b9e4-1737a72919fa",planned:"",confirmed:"8/15/2025",delivery:"8/27/2025",ior:"FlavorCloud",invoice:"",taxes:"$2.75",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.22",quote:"$380.97",fbCost:"$380.97",items:[{country:"Canada",item:"Adjustable Laptop Stand Steel and Aluminum",count:1,weight:9,value:"$55.00"}]},
+  {month:"August 2025",num:94,client:"Verint",orderId:"8c2cea9f-1515-4c8f-bb40-f49f54ea17f1",planned:"",confirmed:"8/28/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$25.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.08",quote:"$406.03",fbCost:"$406.03",items:[{country:"Brazil",item:"Pro 27 Plus Video Conferencing Monitor - P2724DEB",count:1,weight:24,value:"$519.00"}]},
+  {month:"August 2025",num:95,client:"Verint",orderId:"cb3f082a-5f1f-4df5-b975-36eb370d6ae5",planned:"",confirmed:"8/29/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$7.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.05",fbCost:"$386.05",items:[{country:"Canada",item:"ThinkVision M15 15.6-inch Mobile FHD USB-C Monitor",count:1,weight:5,value:"$149.00"}]},
+  {month:"August 2025",num:96,client:"Verint",orderId:"048ed0ee-d332-423e-b0a0-ad1558784714",planned:"",confirmed:"8/29/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$7.45",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.60",quote:"$386.05",fbCost:"$386.05",items:[{country:"Canada",item:"ThinkVision M15 15.6-inch Mobile FHD USB-C Monitor",count:1,weight:5,value:"$149.00"}]},
+  {month:"August 2025",num:97,client:"Verint",orderId:"57a802e8-7c85-468e-88eb-62bba74d85c5",planned:"",confirmed:"8/29/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$25.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$30.08",quote:"$406.03",fbCost:"$406.03",items:[{country:"Canada",item:"Pro 27 Plus Video Conferencing Monitor - P2724DEB",count:1,weight:24,value:"$519.00"}]},
+  {month:"August 2025",num:98,client:"Verint",orderId:"34348a60-2657-4b04-afc9-0a92d923085b",planned:"",confirmed:"8/29/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$10.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.80",quote:"$388.80",fbCost:"$388.80",items:[{country:"Canada",item:"MX Keys Wireless Keyboard",count:1,weight:3,value:"$199.99"}]},
+  // ══ SEPTEMBER 2025 ══
+  {month:"September 2025",num:99,client:"Verint",orderId:"1020b585-d538-4a55-a24c-5ec408dfef67",planned:"",confirmed:"9/4/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$18.10",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.45",quote:"$397.55",fbCost:"$397.55",items:[{country:"Canada",item:"Desk Mat Studio Series - mouse pad",count:1,weight:1,value:"$19.99"},{country:"Canada",item:"Evolve2 65 UC Wireless Headphones USB-C",count:1,weight:1,value:"$212.00"},{country:"Canada",item:"Voyager Bluetooth On Ear Headset w/ USB Type-A Adapter",count:1,weight:2,value:"$129.99"}]},
+  {month:"September 2025",num:100,client:"Verint",orderId:"03b790b9-981e-4cba-9a01-b42aa56f6baf",planned:"",confirmed:"9/4/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$43.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$31.52",quote:"$425.47",fbCost:"$425.47",items:[{country:"Canada",item:"MacBook Pro 14-inch M1 Pro 8-Core CPU 16-Core GPU 32GB RAM 512GB SSD",count:1,weight:6,value:"$879.00"}]},
+  {month:"September 2025",num:101,client:"Verint",orderId:"85bea333-94fa-4d12-9e8e-4d658226cc55",planned:"",confirmed:"9/10/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$5.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.48",quote:"$384.43",fbCost:"$384.43",items:[{country:"Canada",item:"Apple AirPods 4",count:1,weight:2,value:"$119.00"}]},
+  {month:"September 2025",num:102,client:"Verint",orderId:"b5cb47cf-fabc-4bc0-8332-54857816afe5",planned:"",confirmed:"9/10/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$4.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.32",quote:"$382.32",fbCost:"$382.32",items:[{country:"Canada",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"}]},
+  {month:"September 2025",num:103,client:"Astronomer",orderId:"c331a930-1ee6-4eaf-b78a-f86c2fe3c4b7",planned:"",confirmed:"9/10/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$144.95",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$39.60",quote:"$534.55",fbCost:"$534.55",items:[{country:"Switzerland",item:"MacBook Pro 16-inch M4 Pro 14-Core CPU 20-Core GPU 48GB RAM 512GB SSD",count:1,weight:9,value:"$2,899.00"}]},
+  {month:"September 2025",num:104,client:"Verint",orderId:"3adbd024-04f7-41be-8636-188bd619fcda",planned:"",confirmed:"9/23/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$14.70",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$29.18",quote:"$393.88",fbCost:"$393.88",items:[{country:"Canada",item:"ERGO M575 Trackball",count:1,weight:1,value:"$44.10"},{country:"Canada",item:"Elite 85H Over-ear Headphones",count:1,weight:3,value:"$249.99"}]},
+  {month:"September 2025",num:105,client:"Verint",orderId:"dee9c8db-e8dc-44c8-93ed-2555ad1fd279",planned:"",confirmed:"9/24/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$4.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.32",quote:"$382.32",fbCost:"$382.32",items:[{country:"Brazil",item:"MX Anywhere 3 Wireless Mouse",count:1,weight:2,value:"$79.99"}]},
+  {month:"September 2025",num:106,client:"Fortis Games",orderId:"e02a9adb-3b45-40fe-b1d4-5a789baea2d0",planned:"",confirmed:"9/29/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$106.62",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$36.53",quote:"$493.15",fbCost:"$493.15",items:[{country:"Uruguay",item:"MacBook Pro 14-inch M4 Pro 14-Core CPU 20-Core GPU 24GB RAM 1TB SSD",count:1,weight:7,value:"$2,132.40"}]},
+  {month:"September 2025",num:107,client:"Verint",orderId:"2993d47b-4c4d-476d-8983-c6a5d0f05c5e",planned:"9/30/2025",confirmed:"9/30/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$2.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$28.20",quote:"$380.70",fbCost:"$380.70",items:[{country:"Canada",item:"Dual Wireless Charging Pad",count:1,weight:1,value:"$49.99"}]},
+  // ══ OCTOBER 2025 ══
+  {month:"October 2025",num:108,client:"SentinelOne",orderId:"a6238040-ac6c-4b8e-848d-a1137fea9746",planned:"",confirmed:"10/9/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$117.20",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$37.38",quote:"$504.58",fbCost:"$504.58",items:[{country:"UAE",item:"ThinkPad P14s 14-inch Ryzen 7 Pro 8840HS 64GB RAM 1TB SSD",count:1,weight:6,value:"$2,343.99"}]},
+  {month:"October 2025",num:109,client:"Fortis Games",orderId:"4acef4b1-6e06-484f-8571-d9ace703942e",planned:"",confirmed:"10/15/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$128.60",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$38.29",quote:"$516.89",fbCost:"$516.89",items:[{country:"Thailand",item:"Precision 5680 16\" i9 NVIDIA RTX 2000 32GB RAM 1TB SSD",count:1,weight:9,value:"$2,571.99"}]},
+  {month:"October 2025",num:110,client:"SentinelOne",orderId:"681fc48d-bb4a-4c67-b9e3-31b505216509",planned:"",confirmed:"11/3/2025",delivery:"",ior:"FlavorCloud",invoice:"",taxes:"$117.20",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$37.38",quote:"$504.58",fbCost:"$504.58",items:[{country:"UAE",item:"ThinkPad P14s 14-inch Ryzen 7 Pro 8840HS 64GB RAM 1TB SSD",count:1,weight:6,value:"$2,343.99"}]},
+  // ══ NOVEMBER 2025 ══
+  {month:"November 2025",num:111,client:"AppDirect",orderId:"2cbbce0e-7897-499c-8ebc-ea6c6fd57e29",planned:"",confirmed:"11/26/2025",delivery:"",ior:"Flavor Cloud",invoice:"",taxes:"$138.50",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$39.08",quote:"$527.58",fbCost:"$527.58",items:[{country:"Canada",item:"ThinkBook 16 16-inch (Gen 6) i7 16GB RAM 512GB SSD - US English KB",count:1,weight:9,value:"$950.00"},{country:"Canada",item:"ThinkBook 15 15.6-inch (Gen 4) i5 16GB RAM 512GB SSD - US English KB",count:2,weight:18,value:"$1,119.98"},{country:"Canada",item:"ThinkBook 16 16-inch (Gen 6) i5 16GB RAM 512GB SSD - US English KB",count:1,weight:9,value:"$699.99"}]},
+  // ══ DECEMBER 2025 ══
+  {month:"December 2025",num:112,client:"Sophos",orderId:"",planned:"",confirmed:"12/3/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$322.85",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$53.83",quote:"$726.68",fbCost:"$726.68",items:[{country:"Argentina",item:"MacBook Pro 14-inch M4 Pro 12-Core CPU 16-Core GPU 24GB RAM 512GB SSD",count:1,weight:7,value:"$1,999.00"},{country:"Argentina",item:"ThinkPad X13 13-inch (Gen 5) Ultra 5 135U 32GB RAM 512GB SSD (21LVS15N1B)",count:1,weight:6,value:"$1,149.00"},{country:"Argentina",item:"ThinkPad P1 16-inch (Gen 7) i7 32GB RAM 1TB SSD (21KWS05Q1J)",count:1,weight:9,value:"$3,309.00"}]},
+  {month:"December 2025",num:113,client:"Sophos",orderId:"",planned:"",confirmed:"12/3/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$1,213.64",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$125.09",quote:"$1,688.74",fbCost:"$1,688.74",items:[{country:"Brazil",item:"Surface Laptop 7 13.8-inch (7th Edition) Ultra 5 32GB RAM 512GB SSD",count:12,weight:108,value:"$15,575.88"},{country:"Brazil",item:"ThinkPad P1 16-inch (Gen 7) Ultra 9 185H vPro Enterprise 64GB RAM 2TB SSD - NVIDIA GeForce RTX 4070 (21KWS05P1J)",count:3,weight:27,value:"$8,697.00"}]},
+  {month:"December 2025",num:114,client:"Sophos",orderId:"",planned:"",confirmed:"12/3/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$425.05",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$62.00",quote:"$837.05",fbCost:"$837.05",items:[{country:"Colombia",item:"Surface Laptop 7 13.8-inch (7th Edition) Ultra 5 32GB RAM 512GB SSD",count:4,weight:36,value:"$5,191.96"},{country:"Colombia",item:"ThinkPad P1 16-inch (Gen 7) i7 32GB RAM 1TB SSD (21KWS05Q1J)",count:1,weight:9,value:"$3,309.00"}]},
+  {month:"December 2025",num:115,client:"Sophos",orderId:"",planned:"",confirmed:"12/3/2025",delivery:"",ior:"IOR Direct",invoice:"",taxes:"$570.00",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$73.60",quote:"$993.60",fbCost:"$993.60",items:[{country:"Mexico",item:"Surface Laptop 7 13.8-inch (7th Edition) Ultra 5 32GB RAM 512GB SSD",count:4,weight:36,value:"$5,191.96"},{country:"Mexico",item:"ThinkPad P1 16-inch (Gen 7) i7 32GB RAM 1TB SSD (21KWS05Q1J)",count:1,weight:9,value:"$3,309.00"},{country:"Mexico",item:"ThinkPad P1 16-inch (Gen 7) Ultra 9 185H vPro Enterprise 64GB RAM 2TB SSD - NVIDIA GeForce RTX 4070 (21KWS05P1J)",count:1,weight:9,value:"$2,899.00"}]},
+  // ══ JANUARY 2026 ══
+  {month:"January 2026",num:116,client:"Verint",orderId:"12dbee4c-9afb-4bef-a6c7-fc0a636791ce",planned:"",confirmed:"1/8/2026",delivery:"",ior:"Flavor Cloud",invoice:"",taxes:"$93.15",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$35.45",quote:"$478.60",fbCost:"$478.60",items:[{country:"Brazil",item:"ThinkPad T14 14-inch (Gen 6) Ultra 5 235U vPro Enterprise 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,862.99"}]},
+  {month:"January 2026",num:117,client:"Verint",orderId:"7ddd7cd9-83f5-499f-b195-3036c4f04436",planned:"",confirmed:"1/22/2026",delivery:"",ior:"Flavor Cloud",invoice:"",taxes:"$93.15",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$35.45",quote:"$478.60",fbCost:"$478.60",items:[{country:"Canada",item:"ThinkPad T14 14-inch (Gen 6) Ultra 5 235U vPro Enterprise 32GB RAM 256GB SSD",count:1,weight:6,value:"$1,862.99"}]},
+  // ══ FEBRUARY 2026 ══
+  {month:"February 2026",num:118,client:"Discord",orderId:"Export to Korea",planned:"",confirmed:"2/6/2026",delivery:"",ior:"Flavor Cloud",invoice:"",taxes:"$443.60",brokerage:"$150.00",fixed:"$200.00",variable:"$0.00",handling:"$63.49",quote:"$857.09",fbCost:"$857.09",items:[{country:"South Korea",item:"MacBook Pro 14-inch M4 Pro 14-Core CPU 20-Core GPU 24GB RAM 512GB SSD",count:4,weight:28,value:"$8,871.96"}]},
+];
+
+// ── REPO RENDERER ────────────────────────────────────────────────
+let repoInited = false;
+function initRepo() {
+  if (repoInited) return;
+  repoInited = true;
+  // Populate filters
+  const clients = [...new Set(shipments.map(s => s.client))].sort();
+  const iors = [...new Set(shipments.map(s => s.ior).filter(Boolean))].sort();
+  const cs = document.getElementById('repo-filter-client');
+  clients.forEach(c => { const o=document.createElement('option'); o.value=o.textContent=c; cs.appendChild(o); });
+  const is = document.getElementById('repo-filter-ior');
+  iors.forEach(i => { const o=document.createElement('option'); o.value=o.textContent=i; is.appendChild(o); });
+  renderRepo();
+}
+
+function renderRepo() {
+  const search = document.getElementById('repo-search').value.toLowerCase();
+  const clientF = document.getElementById('repo-filter-client').value;
+  const iorF = document.getElementById('repo-filter-ior').value;
+
+  let filtered = shipments.filter(s => {
+    if (clientF && s.client !== clientF) return false;
+    if (iorF && s.ior !== iorF) return false;
+    if (search) {
+      const hay = [s.client, s.orderId, s.ior, s.invoice, ...s.items.map(i=>i.item+i.country)].join(' ').toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  document.getElementById('repo-stats').textContent = filtered.length + ' of ' + shipments.length + ' shipments';
+
+  // Group by month
+  const byMonth = {};
+  filtered.forEach(s => { if (!byMonth[s.month]) byMonth[s.month] = []; byMonth[s.month].push(s); });
+
+  const html = Object.entries(byMonth).map(([month, list]) => `
+    <div class="month-section">
+      <div class="month-header"><span class="month-label">${month}</span></div>
+      ${list.map(s => renderBlock(s)).join('')}
+    </div>
+  `).join('');
+
+  document.getElementById('repo-content').innerHTML = html || '<div class="empty-state" style="padding:48px;text-align:center;color:var(--muted)">No shipments match your filters.</div>';
+}
+
+function renderBlock(s) {
+  const id = 'ship-' + s.num;
+  const itemRows = s.items.filter(i => i.item).map(i => `
+    <tr>
+      <td><span class="country-tag">${i.country}</span></td>
+      <td class="item-name">${i.item}</td>
+      <td style="text-align:center">${i.count || '—'}</td>
+      <td style="text-align:center">${i.weight || '—'}</td>
+      <td style="text-align:right">${i.value}</td>
+    </tr>
+  `).join('');
+
+  const totalCount = s.items.reduce((a,i)=>a+(i.count||0),0);
+
+  return `
+  <div class="shipment-block" id="${id}">
+    <div class="shipment-header" onclick="toggleBlock('${id}')">
+      <div class="sh-left">
+        <span class="sh-num">#${s.num}</span>
+        <span class="sh-client">${s.client}</span>
+        ${s.orderId ? `<span class="sh-order">${s.orderId}</span>` : ''}
+      </div>
+      <div class="sh-right">
+        <span class="sh-quote">${s.quote}</span>
+        ${s.ior ? `<span class="sh-ior">${s.ior}</span>` : ''}
+        <button class="sh-action-btn sh-pdf-btn" onclick="event.stopPropagation();exportPDF(${s.num})" title="Export PDF">PDF</button>
+        <button class="sh-action-btn sh-delete-btn" onclick="event.stopPropagation();deleteShipment(${s.num})" title="Delete shipment">🗑</button>
+        <span class="sh-chevron">▼</span>
+      </div>
+    </div>
+    <div class="shipment-body">
+      <div class="meta-grid">
+        ${s.planned ? `<div class="meta-item"><div class="meta-label">Planned Ship</div><div class="meta-value">${s.planned}</div></div>` : ''}
+        ${s.confirmed ? `<div class="meta-item"><div class="meta-label">Confirmed Ship</div><div class="meta-value">${s.confirmed}</div></div>` : ''}
+        ${s.delivery ? `<div class="meta-item"><div class="meta-label">Delivery Date</div><div class="meta-value">${s.delivery}</div></div>` : ''}
+        ${s.ior ? `<div class="meta-item"><div class="meta-label">IOR Partner</div><div class="meta-value">${s.ior}</div></div>` : ''}
+        ${s.invoice ? `<div class="meta-item"><div class="meta-label">IOR Invoice #</div><div class="meta-value link">${s.invoice}</div></div>` : ''}
+      </div>
+      <div class="cost-grid">
+        <div class="cost-item"><div class="cost-label">Local Tax & Duties</div><div class="cost-value">${s.taxes}</div></div>
+        <div class="cost-item"><div class="cost-label">IOR & Brokerage</div><div class="cost-value">${s.brokerage}</div></div>
+        <div class="cost-item"><div class="cost-label">Fixed Cost</div><div class="cost-value">${s.fixed}</div></div>
+        <div class="cost-item"><div class="cost-label">Variable Cost</div><div class="cost-value">${s.variable}</div></div>
+        <div class="cost-item"><div class="cost-label">FB Service & Handling</div><div class="cost-value">${s.handling}</div></div>
+        <div class="cost-item"><div class="cost-label">Quote to Customer</div><div class="cost-value highlight">${s.quote}</div></div>
+        ${s.fbCost ? `<div class="cost-item"><div class="cost-label">FB Cost</div><div class="cost-value fb">${s.fbCostRaw ? '<span style="color:var(--muted);font-size:11px">('+s.fbCostRaw+')</span> ' : ''}${s.fbCost}</div></div>` : ''}
+      </div>
+      ${itemRows ? `
+      <table class="items-table">
+        <thead><tr><th>Country</th><th>Item</th><th style="text-align:center">Count</th><th style="text-align:center">Weight (lbs)</th><th style="text-align:right">Value</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+        <tfoot><tr class="total-row">
+          <td colspan="2" style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">Total</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--accent)">${totalCount}</td>
+          <td style="text-align:center;font-family:'DM Mono',monospace;color:var(--accent)"></td>
+          <td style="text-align:right;font-family:'DM Mono',monospace;color:var(--green);font-weight:700">${s.quote}</td>
+        </tr></tfoot>
+      </table>` : ''}
+    </div>
+  </div>`;
+}
+
+function deleteShipment(num) {
+  if (!confirm('Delete Shipment #' + num + '? This cannot be undone.')) return;
+  const idx = shipments.findIndex(s => s.num === num);
+  if (idx !== -1) {
+    shipments.splice(idx, 1);
+    repoInited = false;
+    initRepo();
+  }
+}
+
+function exportPDF(num) {
+  const s = shipments.find(sh => sh.num === num);
+  if (!s) return;
+
+  const itemRowsHtml = s.items.filter(i => i.item).map(i => `
+    <tr>
+      <td>${i.country}</td>
+      <td>${i.item}</td>
+      <td style="text-align:center">${i.count || '—'}</td>
+      <td style="text-align:center">${i.weight || '—'}</td>
+      <td style="text-align:right">${i.value}</td>
+    </tr>`).join('');
+
+  const totalCount = s.items.reduce((a,i)=>a+(i.count||0),0);
+  const totalWeight = s.items.reduce((a,i)=>a+(i.weight||0),0);
+
+  const metaRows = [
+    s.planned   ? `<tr><td>Planned Ship Date</td><td>${s.planned}</td></tr>` : '',
+    s.confirmed ? `<tr><td>Confirmed Ship Date</td><td>${s.confirmed}</td></tr>` : '',
+    s.delivery  ? `<tr><td>Delivery Date</td><td>${s.delivery}</td></tr>` : '',
+    s.ior       ? `<tr><td>IOR Partner</td><td>${s.ior}</td></tr>` : '',
+    s.invoice   ? `<tr><td>IOR Invoice #</td><td>${s.invoice}</td></tr>` : '',
+  ].join('');
+
+  const today = new Date().toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'});
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Export Quote – ${s.client} #${s.num}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Syne', sans-serif; color: #111; background: #fff; padding: 48px; font-size: 13px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 36px; border-bottom: 3px solid #111; padding-bottom: 20px; }
+  .brand { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand span { color: #00c49a; }
+  .doc-info { text-align: right; font-family: 'DM Mono', monospace; font-size: 11px; color: #666; line-height: 1.7; }
+  .doc-info strong { color: #111; font-size: 13px; }
+  .section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 10px; margin-top: 28px; }
+  table { width: 100%; border-collapse: collapse; }
+  .meta-table td { padding: 6px 0; font-size: 12px; }
+  .meta-table td:first-child { color: #888; width: 180px; }
+  .meta-table td:last-child { font-family: 'DM Mono', monospace; font-weight: 500; }
+  .items-table th { text-align: left; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #888; padding: 8px 10px; border-bottom: 2px solid #eee; }
+  .items-table th:last-child, .items-table td:last-child { text-align: right; }
+  .items-table th:nth-child(3), .items-table th:nth-child(4),
+  .items-table td:nth-child(3), .items-table td:nth-child(4) { text-align: center; }
+  .items-table td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; font-family: 'DM Mono', monospace; font-size: 11px; vertical-align: middle; }
+  .items-table .total-row td { border-top: 2px solid #eee; border-bottom: none; font-weight: 700; padding-top: 10px; font-size: 12px; }
+  .quote-box { margin-top: 32px; background: #f7fffe; border: 2px solid #00c49a; border-radius: 10px; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .quote-label { font-size: 13px; font-weight: 700; color: #333; }
+  .quote-sub { font-size: 11px; color: #888; margin-top: 3px; }
+  .quote-amount { font-family: 'DM Mono', monospace; font-size: 28px; font-weight: 700; color: #00a07a; }
+  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #eee; font-size: 10px; color: #aaa; line-height: 1.7; }
+  @media print { body { padding: 32px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="brand">Firstbase <span>·</span> Export Services</div>
+    <div style="font-size:11px;color:#888;margin-top:4px;font-family:'DM Mono',monospace">Export Cost Quote</div>
+  </div>
+  <div class="doc-info">
+    <strong>Shipment #${s.num}</strong><br>
+    Quote Date: ${today}<br>
+    Client: ${s.client}<br>
+    ${s.orderId ? 'Order ID: ' + s.orderId : ''}
+  </div>
+</div>
+
+${metaRows ? `<div class="section-title">Shipment Details</div>
+<table class="meta-table">${metaRows}</table>` : ''}
+
+<div class="section-title">Line Items</div>
+<table class="items-table">
+  <thead>
+    <tr>
+      <th>Country</th>
+      <th>Item / Description</th>
+      <th>Count</th>
+      <th>Weight (lbs)</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${itemRowsHtml}
+  </tbody>
+  <tfoot>
+    <tr class="total-row">
+      <td colspan="2">Total</td>
+      <td style="text-align:center">${totalCount}</td>
+      <td style="text-align:center">${totalWeight} lbs</td>
+      <td style="text-align:right"></td>
+    </tr>
+  </tfoot>
+</table>
+
+<div class="quote-box">
+  <div>
+    <div class="quote-label">Quote to Customer</div>
+    <div class="quote-sub">Inclusive of all applicable duties, fees &amp; handling</div>
+  </div>
+  <div class="quote-amount">${s.quote}</div>
+</div>
+
+<div class="footer">
+  Rates are estimates and may vary based on local taxes, customs clearance, brokerage fees, and contractor costs at time of shipment.<br>
+  Only new, unopened items in original packaging qualify. This quote is valid for 30 days from the date of issue.<br>
+  For questions, contact <strong>exports@firstbase.io</strong>
+</div>
+
+<script>window.onload = function(){ window.print(); }<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([html], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (!win) alert('Please allow popups to generate the PDF.');
+}
+
+function toggleBlock(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.toggle('open');
+}
+
+// ── ADD SHIPMENT MODAL ───────────────────────────────────────────
+let itemRowCount = 0;
+
+function openAddShipment() {
+  itemRowCount = 0;
+  document.getElementById('m-items-container').innerHTML = buildItemRowHeader();
+
+  // Add 5 default rows
+  for (let i = 0; i < 5; i++) addItemRow();
+
+  // Reset all fields
+  ['m-client','m-orderid','m-planned','m-confirmed','m-delivery','m-ior','m-invoice'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.getElementById('m-month').value = '';
+  document.getElementById('m-tax-pct').value = '';
+  document.getElementById('m-ior-fee').value = '150';
+  document.getElementById('m-fixed').value = '200';
+  document.getElementById('m-variable').value = '0';
+  document.getElementById('m-fbcost').value = '';
+  document.getElementById('modal-error').style.display = 'none';
+  recalcModal();
+  document.getElementById('add-shipment-overlay').classList.add('open');
+}
+
+function closeAddShipment(e) {
+  if (e && e.target !== document.getElementById('add-shipment-overlay')) return;
+  document.getElementById('add-shipment-overlay').classList.remove('open');
+}
+
+// ── PRODUCT CATALOG ──────────────────────────────────────────────────────────
+const BASE_PRODUCTS = [{"name":"MacBook Air 13 M1 8-Core CPU 7-Core GPU 8GB RAM 256GB SSD","category":"Laptop","origin":"China","value":"1076.42","weight":"6"},{"name":"MacBook Air 13 M2 8-Core CPU 10-Core GPU 8GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"1615.17","weight":"6"},{"name":"MacBook Pro 13 M2 8-Core CPU 10-Core GPU 8GB RAM 256GB SSD","category":"Laptop","origin":"China","value":"1399.67","weight":"6"},{"name":"MacBook Pro 14-inch M1 Pro 8-Core CPU 16-Core GPU 32GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"879.00","weight":"6"},{"name":"MacBook Pro 14 M2 Pro 10-Core CPU 16-Core GPU 16GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"2153.92","weight":"7"},{"name":"MacBook Pro 14 M2 Pro 12-Core CPU 19-Core GPU 16GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2692.67","weight":"7"},{"name":"MacBook Pro 14 M2 Max 12-Core CPU 30-Core GPU 32GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3339.17","weight":"7"},{"name":"MacBook Pro 14-inch M4 Pro 14-Core CPU 20-Core GPU 24GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2132.40","weight":"7"},{"name":"MacBook Pro 14 M4 Max 14-Core CPU 32-Core GPU 36GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3199.00","weight":"7"},{"name":"MacBook Pro 16 M1 Pro 10-Core CPU 16-Core GPU 16GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2807.03","weight":"5"},{"name":"MacBook Pro 16 M1 Pro 10-Core CPU 16-Core GPU 32GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"2807.03","weight":"5"},{"name":"MacBook Pro 16 M2 Pro 12-Core CPU 19-Core GPU 16GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"2692.67","weight":"5"},{"name":"MacBook Pro 16 M2 Pro 12-Core CPU 19-Core GPU 16GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2908.17","weight":"5"},{"name":"MacBook Pro 16 M2 Max 12-Core CPU 38-Core GPU 32GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3770.17","weight":"5"},{"name":"MacBook Pro 16 M2 Max 12-Core CPU 30-Core CPU 64 GB RAM 2 TB SSD","category":"Laptop","origin":"China","value":"4299.00","weight":"5"},{"name":"MacBook Pro 16 M4 Pro 14-Core CPU 20-Core GPU 48GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"2899.00","weight":"5"},{"name":"MacBook Air 13 M3 8-Core CPU 10-Core GPU 8GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"1499.00","weight":"6"},{"name":"ThinkBook 13s G4 13 i5 8GB RAM 256GB SSD (21AR001WUS)","category":"Laptop","origin":"China","value":"949.00","weight":"6"},{"name":"ThinkPad L13 Gen 3 13 i7 16GB RAM 256GB SSD (21B3003RUS)","category":"Laptop","origin":"China","value":"1299.00","weight":"6"},{"name":"ThinkPad X13 13-inch (Gen 5) Ultra 5 135U 32GB RAM 512GB SSD (21LVS15","category":"Laptop","origin":"China","value":"1149.00","weight":"6"},{"name":"ThinkPad T14s Gen 2 14 Ryzen 5 Pro 8GB RAM 256GB SSD (20XF00AEUS)","category":"Laptop","origin":"China","value":"1019.00","weight":"6"},{"name":"ThinkPad T14s Gen 3 14 i5 16GB RAM 256GB SSD (21AH00BQUS)","category":"Laptop","origin":"China","value":"1669.00","weight":"6"},{"name":"ThinkPad T14s Gen 3 14 Ryzen 7 Pro 16GB RAM 512GB SSD (21CQ0002US)","category":"Laptop","origin":"China","value":"1949.00","weight":"6"},{"name":"ThinkPad X1 Carbon Gen 10 14 i7 vPro Enterprise (21CB00BVUS)","category":"Laptop","origin":"China","value":"2559.00","weight":"6"},{"name":"ThinkPad X1 Carbon Gen 12 13-inch Ultra 7 16SU 32GB RAM 256GB SSD","category":"Laptop","origin":"China","value":"2000.00","weight":"6"},{"name":"ThinkPad X1 Carbon 14 i5 8GB RAM 256GB SSD (E 21BV0091US)","category":"Laptop","origin":"China","value":"1599.00","weight":"5"},{"name":"ThinkPad T16 Gen 1 16 i7 16GB RAM 512GB SSD (21BV0090US)","category":"Laptop","origin":"China","value":"1959.00","weight":"6"},{"name":"ThinkPad P1 16-inch (Gen 7) i7 32GB RAM 1TB SSD (21KWS05QJJ)","category":"Laptop","origin":"Vietnam","value":"3309.00","weight":"6"},{"name":"ThinkPad P1 16-inch (Gen 7) Ultra 9 185H vPro Enterprise 64GB RAM 2TB S","category":"Laptop","origin":"Vietnam","value":"2899.00","weight":"6"},{"name":"ThinkPad P16s Gen 1 16 i7 vPro 32GB RAM 1TB SSD (21BT001NUS)","category":"Laptop","origin":"China","value":"2649.00","weight":"6"},{"name":"ThinkPad P16 Gen 1 16 i9 vPro Enterprise 32GB RAM (21D6008WUS)","category":"Laptop","origin":"China","value":"3459.00","weight":"6"},{"name":"Hewlett-Packard Elite Book 840 14 G10 Notebook 16GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"1919.00","weight":"5"},{"name":"Latitude 7420 i7 16GB RAM 512GB SSD - US / English KB - US/CA Plug","category":"Laptop","origin":"China","value":"1529.00","weight":"3"},{"name":"MacBook Pro 16 M3 Max 16-Core CPU 40-Core GPU 48GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3999.00","weight":"5"},{"name":"MacBook Air 13 M3 8-Core CPU 10-Core GPU 8GB RAM 256GB SSD","category":"Laptop","origin":"China","value":"1518.99","weight":"6"},{"name":"MacBook Pro 14 M3 8-Core CPU 10-Core GPU 16GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"1999.00","weight":"4"},{"name":"MacBook Pro 14 M3 Pro 11-Core CPU 14-Core GPU 18GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"1999.00","weight":"4"},{"name":"MacBook Pro 14 M3 Pro 11-Core CPU 14-Core GPU 18GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2399.00","weight":"4"},{"name":"MacBook Pro 14 M3 Max 14-Core CPU 30-Core GPU 36GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3199.00","weight":"4"},{"name":"MacBook Pro 16 M3 Pro 12-Core CPU 18-Core GPU 18GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"2499.00","weight":"5"},{"name":"MacBook Pro 16 M3 Pro 12-Core CPU 18-Core GPU 18GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2699.00","weight":"5"},{"name":"MacBook Pro 16 M3 Max 14-Core CPU 30-Core GPU 36GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3499.00","weight":"5"},{"name":"MacBook Pro 16 M3 Max 16-Core CPU 40-Core GPU 64GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3999.00","weight":"5"},{"name":"MacBook Pro 14 M4 Pro 12-Core CPU 20-Core GPU 24GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"1999.00","weight":"4"},{"name":"MacBook Pro 14 M4 Pro 12-Core CPU 20-Core GPU 24GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2399.00","weight":"4"},{"name":"MacBook Pro 16 M4 Pro 14-Core CPU 20-Core GPU 24GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"2499.00","weight":"5"},{"name":"MacBook Pro 16 M4 Max 14-Core CPU 32-Core GPU 36GB RAM 1TB SSD","category":"Laptop","origin":"China","value":"3499.00","weight":"5"},{"name":"MacBook Air 13 M4 10-Core CPU 10-Core GPU 16GB RAM 256GB SSD","category":"Laptop","origin":"China","value":"1099.00","weight":"3"},{"name":"MacBook Air 13 M4 10-Core CPU 10-Core GPU 16GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"1299.00","weight":"3"},{"name":"MacBook Air 15 M4 10-Core CPU 10-Core GPU 16GB RAM 256GB SSD","category":"Laptop","origin":"China","value":"1299.00","weight":"4"},{"name":"MacBook Air 15 M4 10-Core CPU 10-Core GPU 16GB RAM 512GB SSD","category":"Laptop","origin":"China","value":"1499.00","weight":"4"},{"name":"Logitech MX Keys S Wireless Keyboard","category":"Keyboard","origin":"China","value":"109.99","weight":"2"},{"name":"Logitech MX Keys Mini Wireless Keyboard","category":"Keyboard","origin":"China","value":"99.99","weight":"1"},{"name":"Logitech MX Master 3S Mouse","category":"Mouse","origin":"China","value":"99.99","weight":"1"},{"name":"Logitech MX Anywhere 3S Mouse","category":"Mouse","origin":"China","value":"79.99","weight":"1"},{"name":"Logitech M650 Mouse","category":"Mouse","origin":"China","value":"49.99","weight":"1"},{"name":"Logitech Lift Vertical Ergonomic Mouse","category":"Mouse","origin":"China","value":"69.99","weight":"1"},{"name":"Logitech MX Vertical Mouse","category":"Mouse","origin":"China","value":"99.99","weight":"1"},{"name":"Logitech MX Keys Combo for Business","category":"Keyboard","origin":"China","value":"199.99","weight":"3"},{"name":"Apple Magic Keyboard with Touch ID and Numeric Keypad","category":"Keyboard","origin":"China","value":"129.00","weight":"1"},{"name":"Apple Magic Mouse","category":"Mouse","origin":"China","value":"79.00","weight":"1"},{"name":"Apple Magic Trackpad","category":"Trackpad","origin":"China","value":"129.00","weight":"1"},{"name":"Samsung 27 Monitor S80PB","category":"Monitor","origin":"China","value":"649.99","weight":"16"},{"name":"Samsung 32 Monitor M80B Smart Monitor","category":"Monitor","origin":"China","value":"799.99","weight":"20"},{"name":"Dell 27 Monitor U2722D","category":"Monitor","origin":"China","value":"529.99","weight":"14"},{"name":"LG 27 Monitor 27UK850-W 4K","category":"Monitor","origin":"China","value":"496.99","weight":"14"},{"name":"Apple Studio Display","category":"Monitor","origin":"China","value":"1599.00","weight":"14"},{"name":"Apple Pro Display XDR - Standard Glass","category":"Monitor","origin":"China","value":"4999.00","weight":"16"},{"name":"Desk Mat","category":"Desk Mat","origin":"China","value":"39.99","weight":"2"},{"name":"Anker 10000mAh Power Bank","category":"Power Bank","origin":"China","value":"45.99","weight":"1"},{"name":"Anker 20000mAh Power Bank","category":"Power Bank","origin":"China","value":"55.99","weight":"1"},{"name":"Anker 622 Magnetic Battery","category":"Power Bank","origin":"China","value":"35.99","weight":"1"},{"name":"Anker 737 Power Bank","category":"Power Bank","origin":"China","value":"99.99","weight":"2"},{"name":"Twelve South HiRise 3 Laptop Stand","category":"Laptop Stand","origin":"China","value":"79.99","weight":"2"},{"name":"Rain Design mStand Laptop Stand","category":"Laptop Stand","origin":"China","value":"49.99","weight":"3"},{"name":"Kensington SD5600T Thunderbolt 3 Docking Station","category":"Docking Station","origin":"China","value":"299.99","weight":"3"},{"name":"Caldigit TS4 Thunderbolt 4 Docking Station","category":"Docking Station","origin":"China","value":"399.99","weight":"3"},{"name":"Jabra Evolve2 55 Wireless Headset","category":"Headset","origin":"China","value":"449.00","weight":"1"},{"name":"Jabra Evolve2 75 Wireless Headset","category":"Headset","origin":"China","value":"449.00","weight":"1"},{"name":"Logitech Zone Wireless 2 Headset","category":"Headset","origin":"China","value":"299.99","weight":"1"},{"name":"Bose QuietComfort 45 Headphones","category":"Headphones","origin":"China","value":"329.00","weight":"1"},{"name":"Apple AirPods Pro (2nd generation)","category":"Headphones","origin":"China","value":"249.00","weight":"1"},{"name":"Logitech Brio 4K Webcam","category":"Webcam","origin":"China","value":"199.99","weight":"1"},{"name":"Logitech C920 HD Pro Webcam","category":"Webcam","origin":"China","value":"79.99","weight":"1"},{"name":"Elgato Key Light","category":"Light","origin":"China","value":"199.99","weight":"2"},{"name":"Logitech Tap IP Video Conferencing","category":"Video Conferencing","origin":"China","value":"949.00","weight":"2"},{"name":"Logitech Rally Bar Mini","category":"Video Conferencing","origin":"China","value":"1999.00","weight":"8"},{"name":"Logitech Rally Bar","category":"Video Conferencing","origin":"China","value":"2999.00","weight":"12"},{"name":"TAP Touch Meeting Room Controller","category":"Computer controller","origin":"China","value":"1099.00","weight":"1"},{"name":"Logitech PC Mount","category":"Mount","origin":"China","value":"119.99","weight":"2"},{"name":"Logitech Rally MIC Pod Hub","category":"Microphone Hub","origin":"China","value":"299.99","weight":"1"},{"name":"Any Laptop","category":"Laptop","origin":"China","value":"1100.00","weight":"9"}];
+
+const CUSTOM_PRODUCTS_KEY = 'fb_custom_products';
+function getCustomProducts() { try { return JSON.parse(localStorage.getItem(CUSTOM_PRODUCTS_KEY)||'[]'); } catch { return []; } }
+function saveCustomProducts(arr) { localStorage.setItem(CUSTOM_PRODUCTS_KEY, JSON.stringify(arr)); }
+function getAllProducts() { return [...BASE_PRODUCTS, ...getCustomProducts()]; }
+
+// ── ITEM ROW BUILDER ─────────────────────────────────────────────
+function buildItemRowHeader() {
+  return `<div class="item-row-header" id="item-row-header">
+    <span>Country</span><span>Item / Description</span><span>Count</span><span>Weight</span><span>Value ($)</span><span></span>
+  </div>`;
+}
+
+function addItemRow() {
+  itemRowCount++;
+  const id = 'item-row-' + itemRowCount;
+  const html = `<div class="item-row" id="${id}">
+    <input type="text" placeholder="e.g. Canada" oninput="recalcModal()" class="ir-country" />
+    <div class="prod-dropdown-wrap" id="pdw-${id}">
+      <input type="text" class="prod-input ir-item" placeholder="Select product…" readonly
+        onclick="toggleProdDropdown('${id}')" />
+      <span class="prod-input-arrow">▾</span>
+      <div class="prod-dropdown-menu" id="pdm-${id}">
+        <div class="prod-search-wrap">
+          <input type="text" class="prod-search-input" placeholder="Search products…"
+            oninput="filterProdOptions('${id}', this.value)"
+            onkeydown="prodKeyNav(event, '${id}')" />
+        </div>
+        <div class="prod-list" id="pdl-${id}"></div>
+      </div>
+    </div>
+    <input type="number" placeholder="0" min="0" oninput="recalcModal()" class="ir-count" />
+    <input type="number" placeholder="0" min="0" oninput="recalcModal()" class="ir-weight" />
+    <input type="number" placeholder="0.00" min="0" step="0.01" oninput="recalcModal()" class="ir-value" />
+    <button class="remove-row-btn" onclick="removeItemRow('${id}')">✕</button>
+  </div>`;
+  document.getElementById('m-items-container').insertAdjacentHTML('beforeend', html);
+  renderProdOptions(id, '');
+}
+
+// Position and toggle dropdown
+function toggleProdDropdown(rowId) {
+  const wrap = document.getElementById('pdw-' + rowId);
+  const menu = document.getElementById('pdm-' + rowId);
+  const isOpen = wrap.classList.contains('open');
+
+  // Close all other open dropdowns
+  document.querySelectorAll('.prod-dropdown-wrap.open').forEach(w => {
+    if (w.id !== 'pdw-' + rowId) w.classList.remove('open');
+  });
+
+  if (isOpen) { wrap.classList.remove('open'); return; }
+
+  // Position the menu relative to the input
+  const inputEl = wrap.querySelector('.prod-input');
+  const rect = inputEl.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const menuHeight = 320;
+
+  menu.style.width = Math.max(rect.width, 380) + 'px';
+  menu.style.left = rect.left + 'px';
+
+  if (spaceBelow >= menuHeight || spaceBelow > 200) {
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.bottom = 'auto';
+  } else {
+    menu.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+    menu.style.top = 'auto';
+  }
+
+  wrap.classList.add('open');
+
+  // Focus search input
+  setTimeout(() => {
+    const si = wrap.querySelector('.prod-search-input');
+    if (si) { si.value = ''; si.focus(); filterProdOptions(rowId, ''); }
+  }, 50);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.prod-dropdown-wrap')) {
+    document.querySelectorAll('.prod-dropdown-wrap.open').forEach(w => w.classList.remove('open'));
+  }
+}, true);
+
+// Render options into the list
+function renderProdOptions(rowId, query) {
+  const list = document.getElementById('pdl-' + rowId);
+  if (!list) return;
+  const q = query.toLowerCase();
+  const all = getAllProducts();
+  const filtered = q ? all.filter(p =>
+    p.name.toLowerCase().includes(q) || (p.category||'').toLowerCase().includes(q)
+  ) : all;
+
+  if (!filtered.length) {
+    list.innerHTML = `<div class="prod-no-results">No products found</div>`;
+    return;
+  }
+
+  const row = document.getElementById(rowId);
+  const currentVal = row ? row.querySelector('.ir-item').value : '';
+
+  list.innerHTML = filtered.map((p, i) => `
+    <div class="prod-option${p.name === currentVal ? ' selected' : ''}"
+      data-name="${p.name.replace(/"/g,'&quot;')}"
+      data-weight="${p.weight}"
+      data-value="${p.value}"
+      onclick="selectProdOption('${rowId}', this)">
+      <span class="prod-option-name">${p.name}</span>
+      <span class="prod-option-meta">
+        ${p.category ? `<span class="prod-option-cat">${p.category}</span>` : ''}
+        <span class="prod-option-weight">${p.weight} lbs</span>
+      </span>
+    </div>`).join('');
+}
+
+function filterProdOptions(rowId, query) {
+  renderProdOptions(rowId, query);
+}
+
+function selectProdOption(rowId, optEl) {
+  const name   = optEl.dataset.name;
+  const weight = optEl.dataset.weight;
+  const value  = optEl.dataset.value;
+  const row    = document.getElementById(rowId);
+  if (!row) return;
+  row.querySelector('.ir-item').value  = name;
+  const w = row.querySelector('.ir-weight');
+  const v = row.querySelector('.ir-value');
+  if (w) w.value = weight;
+  if (v && value) v.value = parseFloat(value) || '';
+  document.getElementById('pdw-' + rowId).classList.remove('open');
+  recalcModal();
+}
+
+// Keyboard navigation
+function prodKeyNav(e, rowId) {
+  const list = document.getElementById('pdl-' + rowId);
+  if (!list) return;
+  const opts = list.querySelectorAll('.prod-option');
+  let hi = [...opts].findIndex(o => o.classList.contains('highlighted'));
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    if (hi < opts.length - 1) { if (hi >= 0) opts[hi].classList.remove('highlighted'); opts[hi+1].classList.add('highlighted'); opts[hi+1].scrollIntoView({block:'nearest'}); }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (hi > 0) { opts[hi].classList.remove('highlighted'); opts[hi-1].classList.add('highlighted'); opts[hi-1].scrollIntoView({block:'nearest'}); }
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (hi >= 0) selectProdOption(rowId, opts[hi]);
+  } else if (e.key === 'Escape') {
+    document.getElementById('pdw-' + rowId)?.classList.remove('open');
+  }
+}
+
+function refreshAllDataLists() {
+  // Re-render all open dropdown lists so new custom products show up
+  document.querySelectorAll('#m-items-container .item-row').forEach(row => {
+    const si = document.querySelector('#pdw-' + row.id + ' .prod-search-input');
+    renderProdOptions(row.id, si ? si.value : '');
+  });
+}
+
+function onProductSelect() {} // no-op, handled by selectProdOption now
+
+// ── ADD NEW PRODUCT ──────────────────────────────────────────────
+function addNewProduct() {
+  const errEl = document.getElementById('np-error');
+  errEl.style.display = 'none';
+  const name     = document.getElementById('np-name').value.trim();
+  const category = document.getElementById('np-category').value.trim();
+  const origin   = document.getElementById('np-origin').value.trim();
+  const value    = document.getElementById('np-value').value.trim();
+  const weight   = document.getElementById('np-weight').value.trim();
+  if (!name) { errEl.textContent = 'Item Name is required.'; errEl.style.display='block'; return; }
+  if (getAllProducts().find(p => p.name.toLowerCase() === name.toLowerCase())) {
+    errEl.textContent = 'A product with this name already exists.'; errEl.style.display='block'; return;
+  }
+  const customs = getCustomProducts();
+  customs.push({ name, category, origin, value: value||'0', weight: weight||'0', custom: true });
+  saveCustomProducts(customs);
+  ['np-name','np-category','np-origin','np-value','np-weight'].forEach(id => document.getElementById(id).value = '');
+  renderProductTable();
+  refreshAllDataLists();
+}
+
+// ── DELETE CUSTOM PRODUCT ────────────────────────────────────────
+function deleteCustomProduct(name) {
+  saveCustomProducts(getCustomProducts().filter(p => p.name !== name));
+  renderProductTable();
+  refreshAllDataLists();
+}
+
+// ── RENDER PRODUCT TABLE ─────────────────────────────────────────
+function renderProductTable() {
+  const search    = (document.getElementById('product-search')?.value||'').toLowerCase();
+  const catFilter = document.getElementById('product-filter-category')?.value||'';
+  const all       = getAllProducts();
+
+  // Rebuild category filter
+  const cats   = [...new Set(all.map(p=>p.category).filter(Boolean))].sort();
+  const catSel = document.getElementById('product-filter-category');
+  const prevCat = catSel.value;
+  catSel.innerHTML = '<option value="">All Categories</option>' + cats.map(c=>`<option value="${c}"${c===prevCat?' selected':''}>${c}</option>`).join('');
+
+  const filtered = all.filter(p => {
+    const ms = !search || p.name.toLowerCase().includes(search)||(p.category||'').toLowerCase().includes(search);
+    const mc = !catFilter || p.category===catFilter;
+    return ms && mc;
+  });
+
+  document.getElementById('product-stats').textContent = `${filtered.length} of ${all.length} products`;
+
+  const tbody = document.getElementById('product-tbody');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;">No products found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => `
+    <tr style="border-bottom:1px solid rgba(42,42,58,0.5);transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.02)'" onmouseout="this.style.background='transparent'">
+      <td style="padding:9px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);max-width:280px;">${p.name}</td>
+      <td style="padding:9px 14px;">
+        <span style="display:inline-block;background:rgba(124,58,237,0.08);color:#7c3aed;border:1px solid rgba(124,58,237,0.15);border-radius:4px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:11px;">${p.category||'—'}</span>
+      </td>
+      <td style="padding:9px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted);">${p.origin||'—'}</td>
+      <td style="padding:9px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent);text-align:right;">${p.value?'$'+parseFloat(p.value).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</td>
+      <td style="padding:9px 14px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text);text-align:right;">${p.weight||'—'} lbs</td>
+      <td style="padding:9px 14px;text-align:center;">
+        ${p.custom
+          ? `<span style="background:rgba(37,99,235,0.08);color:var(--accent);border:1px solid rgba(37,99,235,0.18);border-radius:4px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.05em;">CUSTOM</span>`
+          : `<span style="background:rgba(100,116,139,0.1);color:var(--muted);border:1px solid rgba(100,116,139,0.2);border-radius:4px;padding:2px 7px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.05em;">SHEET</span>`}
+      </td>
+      <td style="padding:9px 14px;text-align:center;">
+        ${p.custom?`<button onclick="deleteCustomProduct('${p.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}');return false;" style="background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted);font-size:12px;cursor:pointer;padding:2px 8px;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--warn)';this.style.color='var(--warn)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕</button>`:''}
+      </td>
+    </tr>`).join('');
+}
+
+document.addEventListener('DOMContentLoaded', () => { renderProductTable(); });
+
+function removeItemRow(id) {
+  const el = document.getElementById(id);
+  if (el) { el.remove(); recalcModal(); }
+}
+
+function fmtMoney(n) {
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function recalcModal() {
+  // Sum item values (value × count per row)
+  const rows = document.querySelectorAll('#m-items-container .item-row');
+  let totalValue = 0;
+  rows.forEach(row => {
+    const v = parseFloat(row.querySelector('.ir-value').value) || 0;
+    const c = parseInt(row.querySelector('.ir-count').value) || 1;
+    totalValue += v * c;
+  });
+
+  const taxPct = parseFloat(document.getElementById('m-tax-pct').value) || 0;
+  const iorFee = parseFloat(document.getElementById('m-ior-fee').value) || 0;
+  const fixedCost = parseFloat(document.getElementById('m-fixed').value) || 0;
+  const variableCost = parseFloat(document.getElementById('m-variable').value) || 0;
+  const fbCostEntered = parseFloat(document.getElementById('m-fbcost').value);
+
+  const localTax = totalValue * (taxPct / 100);
+  const handling = (localTax + iorFee + fixedCost + variableCost) * 0.08;
+  const quote = localTax + iorFee + fixedCost + variableCost + handling;
+  const margin = !isNaN(fbCostEntered) ? quote - fbCostEntered : null;
+
+  document.getElementById('pv-total-value').textContent = fmtMoney(totalValue);
+  document.getElementById('pv-tax').textContent = fmtMoney(localTax);
+  document.getElementById('pv-ior').textContent = fmtMoney(iorFee);
+  document.getElementById('pv-fixed').textContent = fmtMoney(fixedCost);
+  document.getElementById('pv-variable').textContent = fmtMoney(variableCost);
+  document.getElementById('pv-handling').textContent = fmtMoney(handling);
+  document.getElementById('pv-quote').textContent = fmtMoney(quote);
+
+  if (margin !== null) {
+    document.getElementById('pv-fbcost-bracket').textContent = '(' + fmtMoney(fbCostEntered) + ')';
+    document.getElementById('pv-margin').textContent = fmtMoney(margin);
+  } else {
+    document.getElementById('pv-fbcost-bracket').textContent = '';
+    document.getElementById('pv-margin').textContent = '—';
+  }
+}
+
+function submitShipment() {
+  const errEl = document.getElementById('modal-error');
+  errEl.style.display = 'none';
+
+  const client = document.getElementById('m-client').value.trim();
+  const month  = document.getElementById('m-month').value;
+  const taxPct = parseFloat(document.getElementById('m-tax-pct').value);
+  const fbCostEntered = parseFloat(document.getElementById('m-fbcost').value);
+
+  if (!client)  { errEl.textContent = 'Client Name is required.'; errEl.style.display='block'; return; }
+  if (!month)   { errEl.textContent = 'Month / Year is required.'; errEl.style.display='block'; return; }
+  if (isNaN(taxPct)) { errEl.textContent = 'Local Tax % is required.'; errEl.style.display='block'; return; }
+  if (isNaN(fbCostEntered)) { errEl.textContent = 'FB Cost is required.'; errEl.style.display='block'; return; }
+
+  const rows = document.querySelectorAll('#m-items-container .item-row');
+  const items = [];
+  let totalValue = 0;
+  rows.forEach(row => {
+    const country = row.querySelector('.ir-country').value.trim();
+    const item    = row.querySelector('.ir-item').value.trim();
+    const count   = parseInt(row.querySelector('.ir-count').value) || 0;
+    const weight  = parseInt(row.querySelector('.ir-weight').value) || 0;
+    const value   = parseFloat(row.querySelector('.ir-value').value) || 0;
+    if (country || item || count || weight || value) {
+      totalValue += value * (count || 1);
+      items.push({ country: country || '—', item, count, weight, value: fmtMoney(value) });
+    }
+  });
+
+  const iorFee      = parseFloat(document.getElementById('m-ior-fee').value) || 0;
+  const fixedCost   = parseFloat(document.getElementById('m-fixed').value) || 0;
+  const variableCost= parseFloat(document.getElementById('m-variable').value) || 0;
+  const localTax    = totalValue * (taxPct / 100);
+  const handling    = (localTax + iorFee + fixedCost + variableCost) * 0.08;
+  const quote       = localTax + iorFee + fixedCost + variableCost + handling;
+  const margin      = quote - fbCostEntered;
+
+  const nextNum = Math.max(...shipments.map(s => s.num)) + 1;
+
+  const newShipment = {
+    month,
+    num: nextNum,
+    client,
+    orderId:   document.getElementById('m-orderid').value.trim(),
+    planned:   document.getElementById('m-planned').value.trim(),
+    confirmed: document.getElementById('m-confirmed').value.trim(),
+    delivery:  document.getElementById('m-delivery').value.trim(),
+    ior:       document.getElementById('m-ior').value.trim(),
+    invoice:   document.getElementById('m-invoice').value.trim(),
+    taxes:     fmtMoney(localTax),
+    brokerage: fmtMoney(iorFee),
+    fixed:     fmtMoney(fixedCost),
+    variable:  fmtMoney(variableCost),
+    handling:  fmtMoney(handling),
+    quote:     fmtMoney(quote),
+    fbCostRaw: fmtMoney(fbCostEntered),
+    fbCost:    fmtMoney(margin),
+    items
+  };
+
+  shipments.push(newShipment);
+
+  // Reset repo so it re-populates filters
+  repoInited = false;
+  initRepo();
+
+  closeAddShipment();
+
+  // Scroll to the new shipment after a short delay
+  setTimeout(() => {
+    const el = document.getElementById('ship-' + nextNum);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 150);
+}
+</script>
+</body>
+</html>

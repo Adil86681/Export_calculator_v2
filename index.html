@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Firstbase Export Rate Calculator</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root {
     --bg: #f1f5f9;
@@ -760,6 +762,15 @@
     transition: border-color 0.2s;
   }
   .item-row input:focus, .item-row select:focus { border-color: var(--accent); }
+  .item-row select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b6b80' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    padding-right: 20px;
+    cursor: pointer;
+  }
   .item-row-header {
     display: grid;
     grid-template-columns: 120px 1fr 60px 60px 90px 28px;
@@ -968,6 +979,107 @@
   .fb-bracket { color: var(--muted); }
   .fb-margin { color: var(--accent2) !important; font-weight: 600; }
 
+  /* ── DATE PICKER ──────────────────────────────────────────────── */
+  .datepicker-wrap {
+    position: relative;
+  }
+  .datepicker-wrap input {
+    padding-right: 32px;
+    cursor: pointer;
+    width: 100%;
+  }
+  .datepicker-icon {
+    position: absolute;
+    right: 9px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .datepicker-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    z-index: 9999;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    width: 240px;
+    padding: 12px;
+    user-select: none;
+  }
+  .datepicker-dropdown.open { display: block; }
+  .dp-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .dp-nav button {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 3px 8px;
+    line-height: 1.4;
+    transition: background 0.15s;
+  }
+  .dp-nav button:hover { background: var(--surface2); }
+  .dp-month-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .dp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .dp-day-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    padding: 3px 0 5px;
+  }
+  .dp-day {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text);
+    text-align: center;
+    padding: 5px 2px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .dp-day:hover { background: rgba(37,99,235,0.1); color: var(--accent); }
+  .dp-day.empty { cursor: default; pointer-events: none; }
+  .dp-day.selected { background: var(--accent); color: #fff; font-weight: 700; }
+  .dp-day.today { border: 1px solid var(--accent); }
+  .dp-clear {
+    margin-top: 10px;
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 5px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .dp-clear:hover { border-color: var(--warn); color: var(--warn); }
+
   .modal-error {
     background: rgba(255,107,53,0.1);
     border: 1px solid rgba(255,107,53,0.3);
@@ -1058,19 +1170,25 @@
       </div>
       <div class="field">
         <label>Destination Country</label>
-        <select id="country" onchange="calculate()">
-          <option value="">— Select origin first —</option>
-        </select>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <select id="country" onchange="calculate()" style="flex:1">
+            <option value="">— Select origin first —</option>
+          </select>
+          <button onclick="openAddCountry()" title="Add new destination country" style="flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:0 14px;height:42px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='var(--accent)'">+ Add Country</button>
+        </div>
       </div>
-      <div class="field full">
-        <label>Declared Value of Laptop (USD)</label>
+      <div class="field">
+        <label>Declared Value per Unit (USD)</label>
         <div class="input-wrap">
           <span class="currency-prefix">$</span>
           <input type="number" id="value" min="1" max="10000" value="2000" placeholder="e.g. 2000" oninput="calculate()" />
         </div>
       </div>
+      <div class="field">
+        <label>Quantity</label>
+        <input type="number" id="quantity" min="1" value="1" placeholder="e.g. 1" oninput="calculate()" />
+      </div>
     </div>
-    <div class="note" id="value-warn" style="display:none">⚠ For shipments exceeding $10,000 USD, contact <strong><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="2a4f525a45585e596a4c4358595e484b594f044345">[email&#160;protected]</a></strong> for a custom quote. These estimates may not apply.</div>
   </div>
 
   <div class="results-card" id="results">
@@ -1081,16 +1199,24 @@
     </div>
     <div id="breakdown-content" style="display:none">
       <div class="breakdown">
-        <div class="breakdown-row"><span class="breakdown-label">Declared Laptop Value</span><span class="breakdown-value" id="r-value">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Declared Value per Unit</span><span class="breakdown-value" id="r-value">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Quantity</span><span class="breakdown-value" id="r-qty">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Total Declared Value</span><span class="breakdown-value" id="r-total-value">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">Local Duties & Tax <span id="r-duty-pct" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-duty">—</span></div>
-        <div class="breakdown-row"><span class="breakdown-label">IOR Minimum Fee</span><span class="breakdown-value highlight" id="r-ior">—</span></div>
-        <div class="breakdown-row"><span class="breakdown-label">Fixed Cost (Freight & Brokerage)</span><span class="breakdown-value highlight" id="r-fixed">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">IOR Minimum Fee <span id="r-ior-note" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-ior">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label">Fixed Cost (Freight & Brokerage) <span id="r-fixed-note" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-fixed">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">Subtotal Export Charges</span><span class="breakdown-value" id="r-subtotal">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">Firstbase Service & Handling (8%)</span><span class="breakdown-value highlight" id="r-handling">—</span></div>
       </div>
       <div class="total-row"><span class="total-label">Total Estimated Cost</span><span class="total-value" id="r-total">—</span></div>
       <div class="transit-badge" id="r-transit">🕐 Transit time: —</div>
-      <div class="note" style="margin-top:16px">Rates are estimates and may vary based on local taxes, customs clearance, brokerage fees, and contractor costs at time of shipment. Only new, unopened laptops in original packaging qualify.</div>
+      <div style="margin-top:16px">
+        <button id="create-quote-btn" onclick="generateQuotePDF()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px 20px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.03em;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='var(--accent)'">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 2v3h3M6 8h4M6 10.5h4M6 5.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Create Quote PDF
+        </button>
+      </div>
+      <div class="note" style="margin-top:12px">Rates are estimates and may vary based on local taxes, customs clearance, brokerage fees, and contractor costs at time of shipment. Only new, unopened laptops in original packaging qualify.</div>
     </div>
   </div>
 
@@ -1212,20 +1338,32 @@
             <input type="text" id="m-client" placeholder="e.g. Discord" oninput="recalcModal()" />
           </div>
           <div class="modal-field">
-            <label>Firstbase Order ID</label>
+            <label>Firstbase Order ID <span class="req">*</span></label>
             <input type="text" id="m-orderid" placeholder="e.g. abc123..." />
           </div>
           <div class="modal-field">
             <label>Planned Ship Date</label>
-            <input type="text" id="m-planned" placeholder="e.g. 3/15/2026" />
+            <div class="datepicker-wrap" id="dpw-planned">
+              <input type="text" id="m-planned" placeholder="Select date…" readonly onclick="toggleDatePicker('planned')" />
+              <span class="datepicker-icon" onclick="toggleDatePicker('planned')">📅</span>
+              <div class="datepicker-dropdown" id="dpd-planned"></div>
+            </div>
           </div>
           <div class="modal-field">
             <label>Confirmed Ship Date</label>
-            <input type="text" id="m-confirmed" placeholder="e.g. 3/16/2026" />
+            <div class="datepicker-wrap" id="dpw-confirmed">
+              <input type="text" id="m-confirmed" placeholder="Select date…" readonly onclick="toggleDatePicker('confirmed')" />
+              <span class="datepicker-icon" onclick="toggleDatePicker('confirmed')">📅</span>
+              <div class="datepicker-dropdown" id="dpd-confirmed"></div>
+            </div>
           </div>
           <div class="modal-field">
             <label>Delivery Date</label>
-            <input type="text" id="m-delivery" placeholder="e.g. 3/28/2026" />
+            <div class="datepicker-wrap" id="dpw-delivery">
+              <input type="text" id="m-delivery" placeholder="Select date…" readonly onclick="toggleDatePicker('delivery')" />
+              <span class="datepicker-icon" onclick="toggleDatePicker('delivery')">📅</span>
+              <div class="datepicker-dropdown" id="dpd-delivery"></div>
+            </div>
           </div>
           <div class="modal-field">
             <label>Month / Year <span class="req">*</span></label>
@@ -1326,6 +1464,64 @@
 
 </div><!-- end container -->
 
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- $10K WARNING POPUP                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="tenk-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:420px;box-shadow:0 24px 64px rgba(0,0,0,0.2);text-align:center;">
+    <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
+    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:10px;">Total Value Exceeds $10,000</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;">Total value exceeds $10,000. Please contact the Firstbase team for a custom quotation.</div>
+    <a href="mailto:exports@firstbase.io" style="display:inline-block;background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:12px;">Contact Firstbase Team</a>
+    <div><button onclick="document.getElementById('tenk-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;margin-top:8px;">Dismiss</button></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- ADD COUNTRY MODAL                                          -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="add-country-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9999;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:100%;max-width:460px;box-shadow:0 24px 64px rgba(0,0,0,0.2);position:relative;">
+    <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:6px;">Add Destination Country</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:24px;">This country will be saved and available in the calculator dropdown across sessions.</div>
+
+    <div style="display:grid;gap:16px;">
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Country Name <span style="color:var(--warn)">*</span></label>
+        <input type="text" id="ac-name" placeholder="e.g. Singapore" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px;outline:none;transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" />
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Local Duties & Tax (% of CIF Value) <span style="color:var(--warn)">*</span></label>
+        <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color 0.2s;" id="ac-duty-wrap">
+          <input type="number" id="ac-duty" placeholder="e.g. 15" min="0" step="0.1" style="flex:1;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px;outline:none;" onfocus="document.getElementById('ac-duty-wrap').style.borderColor='var(--accent)'" onblur="document.getElementById('ac-duty-wrap').style.borderColor='var(--border)'" />
+          <span style="padding:0 12px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;">%</span>
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">IOR Minimum Fee (USD) <span style="color:var(--warn)">*</span></label>
+        <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color 0.2s;" id="ac-ior-wrap">
+          <span style="padding:0 12px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;">$</span>
+          <input type="number" id="ac-ior" placeholder="e.g. 500" min="0" step="0.01" style="flex:1;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px 10px 0;outline:none;" onfocus="document.getElementById('ac-ior-wrap').style.borderColor='var(--accent)'" onblur="document.getElementById('ac-ior-wrap').style.borderColor='var(--border)'" />
+        </div>
+      </div>
+      <div>
+        <label style="display:block;font-size:10px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Fixed Cost Per Shipment (USD) <span style="color:var(--warn)">*</span></label>
+        <div style="display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:border-color 0.2s;" id="ac-fixed-wrap">
+          <span style="padding:0 12px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;">$</span>
+          <input type="number" id="ac-fixed" placeholder="e.g. 1200" min="0" step="0.01" style="flex:1;background:transparent;border:none;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;padding:10px 12px 10px 0;outline:none;" onfocus="document.getElementById('ac-fixed-wrap').style.borderColor='var(--accent)'" onblur="document.getElementById('ac-fixed-wrap').style.borderColor='var(--border)'" />
+        </div>
+      </div>
+    </div>
+
+    <div id="ac-error" style="display:none;margin-top:14px;padding:10px 14px;background:rgba(234,88,12,0.08);border:1px solid rgba(234,88,12,0.3);border-radius:8px;font-size:12px;color:var(--warn);"></div>
+
+    <div style="display:flex;gap:10px;margin-top:24px;justify-content:flex-end;">
+      <button onclick="closeAddCountry()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-family:'Syne',sans-serif;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;">Cancel</button>
+      <button onclick="submitAddCountry()" style="background:var(--accent);border:none;border-radius:8px;padding:10px 20px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:#fff;cursor:pointer;transition:background 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='var(--accent)'">Save Country</button>
+    </div>
+  </div>
+</div>
+
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── TAB SWITCHER ────────────────────────────────────────────────
 function switchTab(name) {
@@ -1393,22 +1589,58 @@ function onWarehouseChange() {
   const wh = document.getElementById('warehouse').value;
   const cs = document.getElementById('country');
   cs.innerHTML = wh && rates[wh] ? '<option value="">— Select destination —</option>' : '<option value="">— Select origin first —</option>';
-  if (wh && rates[wh]) Object.keys(rates[wh].countries).sort().forEach(c => { const o=document.createElement('option'); o.value=o.textContent=c; cs.appendChild(o); });
+  if (wh && rates[wh]) {
+    // Merge built-in and custom countries into one sorted list
+    const builtIn = Object.keys(rates[wh].countries);
+    const custom  = getCustomCountries().map(c => c.name);
+    const all     = [...new Set([...builtIn, ...custom])].sort();
+    all.forEach(c => { const o=document.createElement('option'); o.value=o.textContent=c; cs.appendChild(o); });
+  }
   calculate();
 }
 function fmt(a,cur){const s=cur==='EUR'?'€':'$'; return s+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function calculate() {
-  const wh=document.getElementById('warehouse').value, country=document.getElementById('country').value, val=parseFloat(document.getElementById('value').value);
-  document.getElementById('value-warn').style.display=(val>10000)?'block':'none';
+  const wh=document.getElementById('warehouse').value,
+        country=document.getElementById('country').value,
+        val=parseFloat(document.getElementById('value').value),
+        qty=Math.max(1, parseInt(document.getElementById('quantity').value)||1);
   const content=document.getElementById('breakdown-content'), empty=document.getElementById('empty-state');
   if (!wh||!country||isNaN(val)||val<=0){content.style.display='none';empty.style.display='block';return;}
-  const r=rates[wh].countries[country]; if(!r){content.style.display='none';empty.style.display='block';return;}
-  const currency=rates[wh].currency, duty=val*r.duty, subtotal=duty+r.ior+r.fixed, handling=subtotal*0.08, total=subtotal+handling;
+
+  // Look up in built-in rates first, then custom countries
+  let r = (rates[wh] && rates[wh].countries[country]) ? rates[wh].countries[country] : null;
+  if (!r) {
+    const custom = getCustomCountries().find(c=>c.name===country);
+    if (custom) r = {duty:custom.duty, ior:custom.ior, fixed:custom.fixed, transit:'Contact ops for transit estimate'};
+  }
+  if(!r){content.style.display='none';empty.style.display='block';return;}
+
+  const currency = (rates[wh] && rates[wh].currency) ? rates[wh].currency : 'USD';
+  const totalVal = val * qty;
+
+  // Show $10k popup if total declared value exceeds $9999
+  if (totalVal > 9999) {
+    document.getElementById('tenk-modal').style.display='flex';
+    content.style.display='none'; empty.style.display='block';
+    return;
+  }
+
+  const duty    = totalVal * r.duty;
+  const ior     = r.ior * qty;
+  const fixed   = r.fixed * qty;
+  const subtotal = duty + ior + fixed;
+  const handling = subtotal * 0.08;
+  const total    = subtotal + handling;
+
   document.getElementById('r-value').textContent='$'+val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' USD';
-  document.getElementById('r-duty-pct').textContent='('+( r.duty*100).toFixed(0)+'% of declared value)';
+  document.getElementById('r-qty').textContent=qty.toLocaleString();
+  document.getElementById('r-total-value').textContent='$'+totalVal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' USD';
+  document.getElementById('r-duty-pct').textContent='('+( r.duty*100).toFixed(0)+'% of total declared value)';
   document.getElementById('r-duty').textContent=fmt(duty,currency);
-  document.getElementById('r-ior').textContent=fmt(r.ior,currency);
-  document.getElementById('r-fixed').textContent=fmt(r.fixed,currency);
+  document.getElementById('r-ior-note').textContent=qty>1?'(×'+qty+')':'';
+  document.getElementById('r-ior').textContent=fmt(ior,currency);
+  document.getElementById('r-fixed-note').textContent=qty>1?'(×'+qty+')':'';
+  document.getElementById('r-fixed').textContent=fmt(fixed,currency);
   document.getElementById('r-subtotal').textContent=fmt(subtotal,currency);
   document.getElementById('r-handling').textContent=fmt(handling,currency);
   document.getElementById('r-total').textContent=fmt(total,currency);
@@ -1815,6 +2047,87 @@ function toggleBlock(id) {
 // ── ADD SHIPMENT MODAL ───────────────────────────────────────────
 let itemRowCount = 0;
 
+// ── DATE PICKER ──────────────────────────────────────────────────
+const DP_STATE = {};
+const DP_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DP_DAYS   = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+
+function initDatePicker(key) {
+  const now = new Date();
+  DP_STATE[key] = { year: now.getFullYear(), month: now.getMonth(), selected: null };
+  renderDatePicker(key);
+}
+
+function toggleDatePicker(key) {
+  // Close all others first
+  ['planned','confirmed','delivery'].forEach(k => {
+    if (k !== key) document.getElementById('dpd-' + k).classList.remove('open');
+  });
+  const dd = document.getElementById('dpd-' + key);
+  if (!DP_STATE[key]) initDatePicker(key);
+  dd.classList.toggle('open');
+}
+
+function renderDatePicker(key) {
+  const s = DP_STATE[key];
+  const dd = document.getElementById('dpd-' + key);
+  const firstDay = new Date(s.year, s.month, 1).getDay();
+  const daysInMonth = new Date(s.year, s.month + 1, 0).getDate();
+  const today = new Date();
+
+  let dayCells = DP_DAYS.map(d => `<div class="dp-day-name">${d}</div>`).join('');
+  // Empty cells before first day
+  for (let i = 0; i < firstDay; i++) dayCells += `<div class="dp-day empty"></div>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isSelected = s.selected && s.selected.d === d && s.selected.m === s.month && s.selected.y === s.year;
+    const isToday = d === today.getDate() && s.month === today.getMonth() && s.year === today.getFullYear();
+    dayCells += `<div class="dp-day${isSelected?' selected':''}${isToday&&!isSelected?' today':''}" onclick="selectDate('${key}',${d})">${d}</div>`;
+  }
+
+  dd.innerHTML = `
+    <div class="dp-nav">
+      <button onclick="dpNav('${key}',-1)">‹</button>
+      <span class="dp-month-label">${DP_MONTHS[s.month]} ${s.year}</span>
+      <button onclick="dpNav('${key}',1)">›</button>
+    </div>
+    <div class="dp-grid">${dayCells}</div>
+    <button class="dp-clear" onclick="clearDate('${key}')">Clear</button>
+  `;
+}
+
+function dpNav(key, dir) {
+  const s = DP_STATE[key];
+  s.month += dir;
+  if (s.month > 11) { s.month = 0; s.year++; }
+  if (s.month < 0)  { s.month = 11; s.year--; }
+  renderDatePicker(key);
+}
+
+function selectDate(key, day) {
+  const s = DP_STATE[key];
+  s.selected = { d: day, m: s.month, y: s.year };
+  const formatted = `${s.month + 1}/${day}/${s.year}`;
+  document.getElementById('m-' + key).value = formatted;
+  document.getElementById('dpd-' + key).classList.remove('open');
+  renderDatePicker(key);
+}
+
+function clearDate(key) {
+  DP_STATE[key].selected = null;
+  document.getElementById('m-' + key).value = '';
+  renderDatePicker(key);
+  document.getElementById('dpd-' + key).classList.remove('open');
+}
+
+// Close datepickers when clicking outside
+document.addEventListener('click', function(e) {
+  ['planned','confirmed','delivery'].forEach(key => {
+    const wrap = document.getElementById('dpw-' + key);
+    const dd   = document.getElementById('dpd-' + key);
+    if (wrap && dd && !wrap.contains(e.target)) dd.classList.remove('open');
+  });
+});
+
 function openAddShipment() {
   itemRowCount = 0;
   document.getElementById('m-items-container').innerHTML = buildItemRowHeader();
@@ -1826,10 +2139,15 @@ function openAddShipment() {
   ['m-client','m-orderid','m-planned','m-confirmed','m-delivery','m-ior','m-invoice'].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = '';
   });
+  // Reset date pickers
+  ['planned','confirmed','delivery'].forEach(key => {
+    initDatePicker(key);
+    document.getElementById('dpd-' + key).classList.remove('open');
+  });
   document.getElementById('m-month').value = '';
   document.getElementById('m-tax-pct').value = '';
-  document.getElementById('m-ior-fee').value = '150';
-  document.getElementById('m-fixed').value = '200';
+  document.getElementById('m-ior-fee').value = '';
+  document.getElementById('m-fixed').value = '';
   document.getElementById('m-variable').value = '0';
   document.getElementById('m-fbcost').value = '';
   document.getElementById('modal-error').style.display = 'none';
@@ -1861,7 +2179,24 @@ function addItemRow() {
   itemRowCount++;
   const id = 'item-row-' + itemRowCount;
   const html = `<div class="item-row" id="${id}">
-    <input type="text" placeholder="e.g. Canada" oninput="recalcModal()" class="ir-country" />
+    <select class="ir-country" onchange="onCountrySelect(this)">
+      <option value="">— Select —</option>
+      <option>Argentina</option><option>Australia</option><option>Bermuda</option>
+      <option>Bolivia</option><option>Bosnia</option><option>Brazil</option>
+      <option>Canada</option><option>Chile</option><option>Colombia</option>
+      <option>Costa Rica</option><option>Ecuador</option><option>El Salvador</option>
+      <option>Guatemala</option><option>Honduras</option><option>Hong Kong</option>
+      <option>India</option><option>Indonesia</option><option>Ireland</option>
+      <option>Israel</option><option>Japan</option><option>Jordan</option>
+      <option>Kazakhstan</option><option>Kenya</option><option>Mauritius</option>
+      <option>Mexico</option><option>Morocco</option><option>New Zealand</option>
+      <option>Nicaragua</option><option>Pakistan</option><option>Panama</option>
+      <option>Peru</option><option>Philippines</option><option>Puerto Rico</option>
+      <option>Qatar</option><option>Saudi Arabia</option><option>South Africa</option>
+      <option>South Korea</option><option>Sri Lanka</option><option>Switzerland</option>
+      <option>Taiwan</option><option>Thailand</option><option>Tunisia</option>
+      <option>Turkey</option><option>Uruguay</option><option>Uzbekistan</option>
+    </select>
     <div class="prod-dropdown-wrap" id="pdw-${id}">
       <input type="text" class="prod-input ir-item" placeholder="Select product…" readonly
         onclick="toggleProdDropdown('${id}')" />
@@ -2096,6 +2431,65 @@ function fmtMoney(n) {
   return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+// ── COUNTRY RATES (from Notion table) ───────────────────────────
+const COUNTRY_RATES = {
+  "Argentina":    {duty:60, ior:500,  fixed:1880},
+  "Australia":    {duty:10, ior:150,  fixed:350},
+  "Bermuda":      {duty:34, ior:750,  fixed:2350},
+  "Bolivia":      {duty:35, ior:500,  fixed:1145},
+  "Bosnia":       {duty:25, ior:500,  fixed:1250},
+  "Brazil":       {duty:98, ior:500,  fixed:2000},
+  "Canada":       {duty:15, ior:150,  fixed:200},
+  "Chile":        {duty:28, ior:500,  fixed:1425},
+  "Colombia":     {duty:21, ior:500,  fixed:1670},
+  "Costa Rica":   {duty:14, ior:400,  fixed:600},
+  "Ecuador":      {duty:25, ior:500,  fixed:1250},
+  "El Salvador":  {duty:14, ior:500,  fixed:1245},
+  "Guatemala":    {duty:27, ior:500,  fixed:1260},
+  "Honduras":     {duty:30, ior:500,  fixed:1290},
+  "Hong Kong":    {duty:0,  ior:500,  fixed:2275},
+  "India":        {duty:28, ior:600,  fixed:2350},
+  "Indonesia":    {duty:26, ior:500,  fixed:2350},
+  "Ireland":      {duty:24, ior:500,  fixed:350},
+  "Israel":       {duty:17, ior:300,  fixed:300},
+  "Japan":        {duty:12, ior:250,  fixed:250},
+  "Jordan":       {duty:41, ior:750,  fixed:2250},
+  "Kazakhstan":   {duty:18, ior:750,  fixed:2910},
+  "Kenya":        {duty:23, ior:500,  fixed:2090},
+  "Mauritius":    {duty:20, ior:750,  fixed:1650},
+  "Mexico":       {duty:18, ior:500,  fixed:1395},
+  "Morocco":      {duty:29, ior:750,  fixed:1745},
+  "New Zealand":  {duty:15, ior:500,  fixed:2120},
+  "Nicaragua":    {duty:55, ior:750,  fixed:1850},
+  "Pakistan":     {duty:88, ior:750,  fixed:2800},
+  "Panama":       {duty:21, ior:500,  fixed:1460},
+  "Peru":         {duty:30, ior:500,  fixed:1750},
+  "Philippines":  {duty:16, ior:750,  fixed:2250},
+  "Puerto Rico":  {duty:12, ior:500,  fixed:1440},
+  "Qatar":        {duty:12, ior:750,  fixed:2950},
+  "Saudi Arabia": {duty:19, ior:750,  fixed:1980},
+  "South Africa": {duty:32, ior:750,  fixed:1800},
+  "South Korea":  {duty:18, ior:500,  fixed:675},
+  "Sri Lanka":    {duty:38, ior:750,  fixed:2495},
+  "Switzerland":  {duty:9,  ior:500,  fixed:850},
+  "Taiwan":       {duty:6,  ior:500,  fixed:750},
+  "Thailand":     {duty:9,  ior:750,  fixed:1300},
+  "Tunisia":      {duty:63, ior:750,  fixed:3890},
+  "Turkey":       {duty:111,ior:700,  fixed:2950},
+  "Uruguay":      {duty:40, ior:500,  fixed:1650},
+  "Uzbekistan":   {duty:50, ior:750,  fixed:2285},
+};
+
+function onCountrySelect(selectEl) {
+  const country = selectEl.value;
+  if (!country || !COUNTRY_RATES[country]) { recalcModal(); return; }
+  const r = COUNTRY_RATES[country];
+  document.getElementById('m-tax-pct').value = r.duty;
+  document.getElementById('m-ior-fee').value = r.ior;
+  document.getElementById('m-fixed').value   = r.fixed;
+  recalcModal();
+}
+
 function recalcModal() {
   // Sum item values (value × count per row)
   const rows = document.querySelectorAll('#m-items-container .item-row');
@@ -2138,12 +2532,14 @@ function submitShipment() {
   const errEl = document.getElementById('modal-error');
   errEl.style.display = 'none';
 
-  const client = document.getElementById('m-client').value.trim();
-  const month  = document.getElementById('m-month').value;
-  const taxPct = parseFloat(document.getElementById('m-tax-pct').value);
+  const client  = document.getElementById('m-client').value.trim();
+  const orderId = document.getElementById('m-orderid').value.trim();
+  const month   = document.getElementById('m-month').value;
+  const taxPct  = parseFloat(document.getElementById('m-tax-pct').value);
   const fbCostEntered = parseFloat(document.getElementById('m-fbcost').value);
 
   if (!client)  { errEl.textContent = 'Client Name is required.'; errEl.style.display='block'; return; }
+  if (!orderId) { errEl.textContent = 'Firstbase Order ID is required.'; errEl.style.display='block'; return; }
   if (!month)   { errEl.textContent = 'Month / Year is required.'; errEl.style.display='block'; return; }
   if (isNaN(taxPct)) { errEl.textContent = 'Local Tax % is required.'; errEl.style.display='block'; return; }
   if (isNaN(fbCostEntered)) { errEl.textContent = 'FB Cost is required.'; errEl.style.display='block'; return; }
@@ -2208,6 +2604,218 @@ function submitShipment() {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, 150);
 }
+
+// ── QUOTE PDF GENERATOR ─────────────────────────────────────────
+function generateQuotePDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const wh      = document.getElementById('warehouse').value;
+  const country = document.getElementById('country').value;
+  const val     = parseFloat(document.getElementById('value').value);
+  const qty     = Math.max(1, parseInt(document.getElementById('quantity').value)||1);
+
+  const warehouseLabels = { us:'US (Salt Lake City)', de:'Germany (EU)', sg:'Singapore' };
+  const whLabel = warehouseLabels[wh] || wh;
+
+  // Grab displayed values from the DOM
+  const get = id => document.getElementById(id).textContent;
+  const date = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+
+  const pageW = 210, margin = 18, contentW = pageW - margin*2;
+  let y = 0;
+
+  // ── Header bar
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 0, pageW, 28, 'F');
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(255,255,255);
+  doc.text('Firstbase', margin, 12);
+
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  doc.text('Export Service Quotation', margin, 19);
+
+  doc.setFontSize(9);
+  doc.text(`Date: ${date}`, pageW - margin, 12, { align:'right' });
+  doc.text('This is an estimate only', pageW - margin, 19, { align:'right' });
+
+  y = 38;
+
+  // ── Shipment info block
+  doc.setTextColor(15, 23, 42);
+  doc.setFillColor(241,245,249);
+  doc.roundedRect(margin, y, contentW, 22, 3, 3, 'F');
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(8);
+  doc.setTextColor(100,116,139);
+  doc.text('ORIGIN WAREHOUSE', margin+5, y+7);
+  doc.text('DESTINATION', margin + contentW/3, y+7);
+  doc.text('QUANTITY', margin + (contentW/3)*2, y+7);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(15,23,42);
+  doc.text(whLabel, margin+5, y+16);
+  doc.text(country, margin + contentW/3, y+16);
+  doc.text(qty.toString(), margin + (contentW/3)*2, y+16);
+
+  y += 32;
+
+  // ── Cost breakdown table
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.setTextColor(15,23,42);
+  doc.text('Cost Breakdown', margin, y);
+  y += 5;
+
+  doc.autoTable({
+    startY: y,
+    margin: { left: margin, right: margin },
+    head: [['Description', 'Amount']],
+    body: [
+      ['Declared Value per Unit', '$' + val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD'],
+      ['Quantity', qty.toString()],
+      ['Total Declared Value', get('r-total-value')],
+      ['Local Duties & Tax ' + get('r-duty-pct'), get('r-duty')],
+      ['IOR Minimum Fee' + (qty>1?' (×'+qty+')':''), get('r-ior')],
+      ['Fixed Cost – Freight & Brokerage' + (qty>1?' (×'+qty+')':''), get('r-fixed')],
+      ['Subtotal Export Charges', get('r-subtotal')],
+      ['Firstbase Service & Handling (8%)', get('r-handling')],
+    ],
+    foot: [['Total Estimated Cost', get('r-total')]],
+    headStyles: { fillColor:[37,99,235], textColor:255, fontStyle:'bold', fontSize:9 },
+    footStyles: { fillColor:[15,23,42], textColor:255, fontStyle:'bold', fontSize:10 },
+    bodyStyles: { fontSize:9, textColor:[15,23,42] },
+    alternateRowStyles: { fillColor:[248,250,252] },
+    columnStyles: { 0:{ cellWidth:'auto' }, 1:{ cellWidth:45, halign:'right', fontStyle:'bold' } },
+    didParseCell: (data) => {
+      // Highlight the three main cost rows
+      const highlight = ['Local Duties & Tax','IOR Minimum Fee','Fixed Cost'];
+      if (data.section==='body' && highlight.some(h=>String(data.row.raw[0]).startsWith(h))) {
+        data.cell.styles.textColor = [37,99,235];
+      }
+    }
+  });
+
+  y = doc.lastAutoTable.finalY + 10;
+
+  // ── Transit time badge
+  const transitText = get('r-transit');
+  doc.setFillColor(239,246,255);
+  doc.setDrawColor(191,219,254);
+  doc.roundedRect(margin, y, contentW, 10, 2, 2, 'FD');
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9);
+  doc.setTextColor(37,99,235);
+  doc.text(transitText, margin + contentW/2, y+6.5, { align:'center' });
+
+  y += 18;
+
+  // ── Disclaimer
+  doc.setFont('helvetica','italic');
+  doc.setFontSize(7.5);
+  doc.setTextColor(100,116,139);
+  const disclaimer = 'Rates are estimates and may vary based on local taxes, customs clearance, brokerage fees, and contractor costs at time of shipment. Only new, unopened laptops in original packaging qualify. For shipments with a total declared value exceeding $10,000 USD, please contact the Firstbase team for a custom quotation.';
+  const lines = doc.splitTextToSize(disclaimer, contentW);
+  doc.text(lines, margin, y);
+
+  // ── Footer
+  doc.setFillColor(37,99,235);
+  doc.rect(0, 287, pageW, 10, 'F');
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7);
+  doc.setTextColor(255,255,255);
+  doc.text('Firstbase Export Services  |  exports@firstbase.io', pageW/2, 293, { align:'center' });
+
+  // Save
+  const filename = `Firstbase_Export_Quote_${country.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.save(filename);
+}
+
+// ── CUSTOM COUNTRIES (localStorage) ─────────────────────────────
+const CUSTOM_COUNTRIES_KEY = 'fb_custom_countries_v1';
+
+function getCustomCountries() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_COUNTRIES_KEY)) || []; }
+  catch(e) { return []; }
+}
+
+function saveCustomCountries(list) {
+  localStorage.setItem(CUSTOM_COUNTRIES_KEY, JSON.stringify(list));
+}
+
+function openAddCountry() {
+  document.getElementById('ac-name').value='';
+  document.getElementById('ac-duty').value='';
+  document.getElementById('ac-ior').value='';
+  document.getElementById('ac-fixed').value='';
+  document.getElementById('ac-error').style.display='none';
+  const modal = document.getElementById('add-country-modal');
+  modal.style.display='flex';
+  setTimeout(()=>document.getElementById('ac-name').focus(), 50);
+}
+
+function closeAddCountry() {
+  document.getElementById('add-country-modal').style.display='none';
+}
+
+function submitAddCountry() {
+  const name  = document.getElementById('ac-name').value.trim();
+  const dutyRaw = document.getElementById('ac-duty').value.trim();
+  const iorRaw  = document.getElementById('ac-ior').value.trim();
+  const fixedRaw= document.getElementById('ac-fixed').value.trim();
+  const errEl = document.getElementById('ac-error');
+
+  // Validation
+  if (!name)                        { showAcError('Country name is required.'); return; }
+  if (dutyRaw===''||isNaN(+dutyRaw)) { showAcError('Local Duties & Tax is required and must be a number.'); return; }
+  if (iorRaw===''||isNaN(+iorRaw))   { showAcError('IOR Minimum Fee is required and must be a number.'); return; }
+  if (fixedRaw===''||isNaN(+fixedRaw)){ showAcError('Fixed Cost Per Shipment is required and must be a number.'); return; }
+
+  const duty  = parseFloat(dutyRaw) / 100;
+  const ior   = parseFloat(iorRaw);
+  const fixed = parseFloat(fixedRaw);
+
+  // Check for duplicate
+  const existing = getCustomCountries();
+  if (existing.some(c=>c.name.toLowerCase()===name.toLowerCase())) {
+    showAcError(`"${name}" already exists as a custom country.`);
+    return;
+  }
+
+  // Check it's not already a built-in country
+  const wh = document.getElementById('warehouse').value;
+  if (wh && rates[wh] && rates[wh].countries[name]) {
+    showAcError(`"${name}" already exists in the built-in country list.`);
+    return;
+  }
+
+  // Save
+  existing.push({ name, duty, ior, fixed });
+  saveCustomCountries(existing);
+  closeAddCountry();
+
+  // Refresh dropdown and select the new country
+  onWarehouseChange();
+  const cs = document.getElementById('country');
+  cs.value = name;
+  calculate();
+}
+
+function showAcError(msg) {
+  const el = document.getElementById('ac-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// Close modal on backdrop click
+document.getElementById('add-country-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeAddCountry();
+});
 </script>
 </body>
 </html>

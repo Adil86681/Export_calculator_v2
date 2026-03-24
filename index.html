@@ -1165,6 +1165,7 @@
           <option value="">— Select warehouse —</option>
           <option value="us">🇺🇸 US (Salt Lake City)</option>
           <option value="de">🇩🇪 Germany (EU)</option>
+          <option value="de_ret">🇩🇪 Germany - Returns</option>
           <option value="sg">🇸🇬 Singapore</option>
         </select>
       </div>
@@ -1202,7 +1203,7 @@
         <div class="breakdown-row"><span class="breakdown-label">Declared Value per Unit</span><span class="breakdown-value" id="r-value">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">Quantity</span><span class="breakdown-value" id="r-qty">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">Total Declared Value</span><span class="breakdown-value" id="r-total-value">—</span></div>
-        <div class="breakdown-row"><span class="breakdown-label">Local Duties & Tax <span id="r-duty-pct" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-duty">—</span></div>
+        <div class="breakdown-row"><span class="breakdown-label"><span id="r-duty-label">Local Duties &amp; Tax </span><span id="r-duty-pct" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-duty">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">IOR Minimum Fee <span id="r-ior-note" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-ior">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">Fixed Cost (Freight & Brokerage) <span id="r-fixed-note" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)"></span></span><span class="breakdown-value highlight" id="r-fixed">—</span></div>
         <div class="breakdown-row"><span class="breakdown-label">Subtotal Export Charges</span><span class="breakdown-value" id="r-subtotal">—</span></div>
@@ -1210,6 +1211,7 @@
       </div>
       <div class="total-row"><span class="total-label">Total Estimated Cost</span><span class="total-value" id="r-total">—</span></div>
       <div class="transit-badge" id="r-transit">🕐 Transit time: —</div>
+      <div id="r-footnote" style="display:none;margin-top:12px;background:rgba(37,99,235,0.05);border:1px solid rgba(37,99,235,0.15);border-radius:8px;padding:10px 14px;font-size:11px;color:var(--muted);line-height:1.6;font-family:'DM Mono',monospace;">* Returns from Switzerland and Norway are imported into the Firstbase Germany warehouse and processed through the EU warehouse lifecycle (reuse, storage, or ITAD). Only export/import service fees apply; standard return action fees do not apply.</div>
       <div style="margin-top:16px">
         <button id="create-quote-btn" onclick="generateQuotePDF()" style="width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:14px 20px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;letter-spacing:0.03em;transition:background 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='var(--accent)'">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2h6l3 3v9a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M10 2v3h3M6 8h4M6 10.5h4M6 5.5h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -1472,7 +1474,7 @@
     <div style="font-size:40px;margin-bottom:16px;">⚠️</div>
     <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text);margin-bottom:10px;">Total Value Exceeds $10,000</div>
     <div style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;">Total value exceeds $10,000. Please contact the Firstbase team for a custom quotation.</div>
-    <a href="mailto:exports@firstbase.io" style="display:inline-block;background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:12px;">Contact Firstbase Team</a>
+    <a href="/cdn-cgi/l/email-protection#600518100f121413200609121314020113054e090f" style="display:inline-block;background:var(--accent);color:#fff;text-decoration:none;border-radius:8px;padding:10px 24px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;margin-bottom:12px;">Contact Firstbase Team</a>
     <div><button onclick="document.getElementById('tenk-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-family:'Syne',sans-serif;font-size:12px;cursor:pointer;margin-top:8px;">Dismiss</button></div>
   </div>
 </div>
@@ -1522,7 +1524,7 @@
   </div>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ── TAB SWITCHER ────────────────────────────────────────────────
 function switchTab(name) {
   const tabs = ['calculator','repository','products'];
@@ -1575,15 +1577,15 @@ async function gasPost(payload) {
 
 // ── RATE CALCULATOR ─────────────────────────────────────────────
 // Loaded from Sheet on init — keyed by warehouse then country
-let rates = { us: { currency:'USD', countries:{} }, de: { currency:'EUR', countries:{} }, sg: { currency:'USD', countries:{} } };
-const WH_MAP = { US:'us', DE:'de', SG:'sg' };
+let rates = { us: { currency:'USD', countries:{} }, de: { currency:'EUR', countries:{} }, de_ret: { currency:'EUR', countries:{} }, sg: { currency:'USD', countries:{} } };
+const WH_MAP = { US:'us', DE:'de', 'DE-RETURNS':'de_ret', SG:'sg' };
 
 async function loadRates() {
   try {
     const text = await fetch(csvUrl(0)).then(r => r.text());
     const rows = parseCSV(text);
     // Reset
-    rates = { us:{currency:'USD',countries:{}}, de:{currency:'EUR',countries:{}}, sg:{currency:'USD',countries:{}} };
+    rates = { us:{currency:'USD',countries:{}}, de:{currency:'EUR',countries:{}}, de_ret:{currency:'EUR',countries:{}}, sg:{currency:'USD',countries:{}} };
     rows.forEach(r => {
       const whKey = WH_MAP[r['Warehouse']] || r['Warehouse'].toLowerCase();
       if (!rates[whKey]) rates[whKey] = { currency: r['Currency']||'USD', countries:{} };
@@ -1632,9 +1634,22 @@ function onWarehouseChange() {
     const all = Object.keys(rates[wh].countries).sort();
     all.forEach(c => { const o=document.createElement('option'); o.value=o.textContent=c; cs.appendChild(o); });
   }
+  // Update declared value label to reflect currency
+  const currency = (wh && rates[wh]) ? rates[wh].currency : 'USD';
+  const prefixEl = document.querySelector('.currency-prefix');
+  if (prefixEl) prefixEl.textContent = currency === 'EUR' ? '€' : '$';
+  const valLabel = document.querySelector('label[for-field="value"]');
+  if (valLabel) valLabel.textContent = 'Declared Value per Unit (' + currency + ')';
+  // Also update the field label directly
+  const valueField = document.getElementById('value');
+  if (valueField) {
+    const lbl = valueField.closest('.field')?.querySelector('label');
+    if (lbl) lbl.textContent = 'Declared Value per Unit (' + (currency||'USD') + ')';
+  }
   calculate();
 }
 function fmt(a,cur){const s=cur==='EUR'?'€':'$'; return s+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function fmtVal(a,cur){const s=cur==='EUR'?'€':'$'; const label=cur==='EUR'?'EUR':'USD'; return s+a.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' '+label;}
 function calculate() {
   const wh=document.getElementById('warehouse').value,
         country=document.getElementById('country').value,
@@ -1643,12 +1658,12 @@ function calculate() {
   const content=document.getElementById('breakdown-content'), empty=document.getElementById('empty-state');
   if (!wh||!country||isNaN(val)||val<=0){content.style.display='none';empty.style.display='block';return;}
 
-  // Look up in rates (includes custom countries merged on load)
   let r = (rates[wh] && rates[wh].countries[country]) ? rates[wh].countries[country] : null;
   if(!r){content.style.display='none';empty.style.display='block';return;}
 
   const currency = (rates[wh] && rates[wh].currency) ? rates[wh].currency : 'USD';
   const totalVal = val * qty;
+  const isReturns = wh === 'de_ret';
 
   // Show $10k popup if total declared value exceeds $9999
   if (totalVal > 9999) {
@@ -1657,26 +1672,49 @@ function calculate() {
     return;
   }
 
-  const duty    = totalVal * r.duty;
-  const ior     = r.ior * qty;
-  const fixed   = r.fixed * qty;
-  const subtotal = duty + ior + fixed;
-  const handling = subtotal * 0.08;
-  const total    = subtotal + handling;
+  let duty, ior, fixed, subtotal, handling, total;
 
-  document.getElementById('r-value').textContent='$'+val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' USD';
+  if (isReturns) {
+    // Germany - Returns formula: no qty scaling on fixed or IOR
+    duty     = totalVal * r.duty;          // 19% of total declared value
+    ior      = r.ior;                      // flat €50, no qty scaling
+    fixed    = r.fixed;                    // per shipment, no qty scaling
+    subtotal = duty + ior + fixed;
+    handling = subtotal * 0.08;
+    total    = subtotal + handling;
+  } else {
+    duty    = totalVal * r.duty;
+    ior     = r.ior * qty;
+    fixed   = r.fixed * qty;
+    subtotal = duty + ior + fixed;
+    handling = subtotal * 0.08;
+    total    = subtotal + handling;
+  }
+
+  // Update duty row label
+  const dutyLabelEl = document.getElementById('r-duty-label');
+  if (dutyLabelEl) dutyLabelEl.textContent = isReturns ? 'German Import VAT ' : 'Local Duties & Tax ';
+
+  document.getElementById('r-value').textContent=fmtVal(val,currency);
   document.getElementById('r-qty').textContent=qty.toLocaleString();
-  document.getElementById('r-total-value').textContent='$'+totalVal.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})+' USD';
-  document.getElementById('r-duty-pct').textContent='('+( r.duty*100).toFixed(0)+'% of total declared value)';
+  document.getElementById('r-total-value').textContent=fmtVal(totalVal,currency);
+  document.getElementById('r-duty-pct').textContent='('+(r.duty*100).toFixed(0)+'% of total declared value)';
   document.getElementById('r-duty').textContent=fmt(duty,currency);
-  document.getElementById('r-ior-note').textContent=qty>1?'(×'+qty+')':'';
+  document.getElementById('r-ior-note').textContent=(!isReturns && qty>1)?'(×'+qty+')':'';
   document.getElementById('r-ior').textContent=fmt(ior,currency);
-  document.getElementById('r-fixed-note').textContent=qty>1?'(×'+qty+')':'';
+  document.getElementById('r-fixed-note').textContent=(!isReturns && qty>1)?'(×'+qty+')':'';
   document.getElementById('r-fixed').textContent=fmt(fixed,currency);
   document.getElementById('r-subtotal').textContent=fmt(subtotal,currency);
   document.getElementById('r-handling').textContent=fmt(handling,currency);
   document.getElementById('r-total').textContent=fmt(total,currency);
   document.getElementById('r-transit').textContent='🕐 Transit time: '+r.transit;
+
+  // Footnote for Germany - Returns
+  const footnoteEl = document.getElementById('r-footnote');
+  if (footnoteEl) {
+    footnoteEl.style.display = isReturns ? 'block' : 'none';
+  }
+
   content.style.display='block'; empty.style.display='none';
 }
 
@@ -2583,8 +2621,12 @@ function generateQuotePDF() {
   const val     = parseFloat(document.getElementById('value').value);
   const qty     = Math.max(1, parseInt(document.getElementById('quantity').value)||1);
 
-  const warehouseLabels = { us:'US (Salt Lake City)', de:'Germany (EU)', sg:'Singapore' };
+  const warehouseLabels = { us:'US (Salt Lake City)', de:'Germany (EU)', de_ret:'Germany - Returns', sg:'Singapore' };
   const whLabel = warehouseLabels[wh] || wh;
+  const currency = (rates[wh] && rates[wh].currency) ? rates[wh].currency : 'USD';
+  const currSymbol = currency === 'EUR' ? '€' : '$';
+  const currLabel = currency === 'EUR' ? 'EUR' : 'USD';
+  const isReturns = wh === 'de_ret';
 
   // Grab displayed values from the DOM
   const get = id => document.getElementById(id).textContent;
@@ -2645,12 +2687,12 @@ function generateQuotePDF() {
     margin: { left: margin, right: margin },
     head: [['Description', 'Amount']],
     body: [
-      ['Declared Value per Unit', '$' + val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' USD'],
+      ['Declared Value per Unit', currSymbol + val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ' + currLabel],
       ['Quantity', qty.toString()],
       ['Total Declared Value', get('r-total-value')],
-      ['Local Duties & Tax ' + get('r-duty-pct'), get('r-duty')],
-      ['IOR Minimum Fee' + (qty>1?' (×'+qty+')':''), get('r-ior')],
-      ['Fixed Cost – Freight & Brokerage' + (qty>1?' (×'+qty+')':''), get('r-fixed')],
+      [( isReturns ? 'German Import VAT ' : 'Local Duties & Tax ') + get('r-duty-pct'), get('r-duty')],
+      ['IOR Minimum Fee' + (qty>1 && !isReturns?' (×'+qty+')':''), get('r-ior')],
+      ['Fixed Cost – Freight & Brokerage' + (qty>1 && !isReturns?' (×'+qty+')':''), get('r-fixed')],
       ['Subtotal Export Charges', get('r-subtotal')],
       ['Firstbase Service & Handling (8%)', get('r-handling')],
     ],
@@ -2682,6 +2724,20 @@ function generateQuotePDF() {
   doc.text(transitText, margin + contentW/2, y+6.5, { align:'center' });
 
   y += 18;
+
+  // ── Footnote for Germany - Returns
+  if (isReturns) {
+    doc.setFillColor(239,246,255);
+    doc.setDrawColor(191,219,254);
+    doc.roundedRect(margin, y, contentW, 16, 2, 2, 'FD');
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(37,99,235);
+    const footnoteText = '* Returns from Switzerland and Norway are imported into the Firstbase Germany warehouse and processed through the EU warehouse lifecycle (reuse, storage, or ITAD). Only export/import service fees apply; standard return action fees do not apply.';
+    const fnLines = doc.splitTextToSize(footnoteText, contentW - 8);
+    doc.text(fnLines, margin + 4, y + 5.5);
+    y += 20;
+  }
 
   // ── Disclaimer
   doc.setFont('helvetica','italic');
@@ -2771,8 +2827,11 @@ function showAcError(msg) {
 }
 
 // Close modal on backdrop click
-document.getElementById('add-country-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeAddCountry();
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('add-country-modal');
+  if (modal && e.target === modal) closeAddCountry();
+  const tenkModal = document.getElementById('tenk-modal');
+  if (tenkModal && e.target === tenkModal) tenkModal.style.display='none';
 });
 </script>
 </body>

@@ -2624,63 +2624,88 @@ function generateQuotePDF() {
   const warehouseLabels = { us:'US (Salt Lake City)', de:'Germany (EU)', de_ret:'Germany - Returns', sg:'Singapore' };
   const whLabel = warehouseLabels[wh] || wh;
   const currency = (rates[wh] && rates[wh].currency) ? rates[wh].currency : 'USD';
-  const currSymbol = currency === 'EUR' ? '€' : '$';
-  const currLabel = currency === 'EUR' ? 'EUR' : 'USD';
-  const isReturns = wh === 'de_ret';
+  const currSymbol = currency === 'EUR' ? '\u20ac' : '$';
+  const currLabel  = currency === 'EUR' ? 'EUR' : 'USD';
+  const isReturns  = wh === 'de_ret';
 
-  // Grab displayed values from the DOM
-  const get = id => document.getElementById(id).textContent;
+  const get  = id => document.getElementById(id).textContent;
   const date = new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
 
-  const pageW = 210, margin = 18, contentW = pageW - margin*2;
+  const pageW = 210, margin = 16, contentW = pageW - margin * 2;
   let y = 0;
 
-  // ── Header bar
-  doc.setFillColor(37, 99, 235);
-  doc.rect(0, 0, pageW, 28, 'F');
+  // ── Header bar ───────────────────────────────────────────────
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageW, 32, 'F');
 
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(16);
-  doc.setTextColor(255,255,255);
-  doc.text('Firstbase', margin, 12);
+  // Left: company name + sub
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.text('Firstbase - An Appdirect Company', margin, 13);
 
-  doc.setFontSize(9);
-  doc.setFont('helvetica','normal');
-  doc.text('Export Service Quotation', margin, 19);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(148, 163, 184);
+  doc.text('Export Service Quotation', margin, 21);
 
-  doc.setFontSize(9);
-  doc.text(`Date: ${date}`, pageW - margin, 12, { align:'right' });
-  doc.text('This is an estimate only', pageW - margin, 19, { align:'right' });
-
-  y = 38;
-
-  // ── Shipment info block
-  doc.setTextColor(15, 23, 42);
-  doc.setFillColor(241,245,249);
-  doc.roundedRect(margin, y, contentW, 22, 3, 3, 'F');
-
-  doc.setFont('helvetica','bold');
+  // Right: date + estimate notice
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.setTextColor(100,116,139);
-  doc.text('ORIGIN WAREHOUSE', margin+5, y+7);
-  doc.text('DESTINATION', margin + contentW/3, y+7);
-  doc.text('QUANTITY', margin + (contentW/3)*2, y+7);
+  doc.setTextColor(148, 163, 184);
+  doc.text(date, pageW - margin, 13, { align: 'right' });
+  doc.setTextColor(251, 191, 36);
+  doc.text('ESTIMATE ONLY', pageW - margin, 21, { align: 'right' });
 
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(11);
-  doc.setTextColor(15,23,42);
-  doc.text(whLabel, margin+5, y+16);
-  doc.text(country, margin + contentW/3, y+16);
-  doc.text(qty.toString(), margin + (contentW/3)*2, y+16);
+  // Accent line under header
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 32, pageW, 2, 'F');
 
-  y += 32;
+  y = 44;
 
-  // ── Cost breakdown table
-  doc.setFont('helvetica','bold');
+  // ── Shipment summary block ───────────────────────────────────
+  doc.setFillColor(248, 250, 252);
+  doc.setDrawColor(226, 232, 240);
+  doc.roundedRect(margin, y, contentW, 26, 3, 3, 'FD');
+
+  const col = contentW / 3;
+
+  // Labels
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(7);
+  doc.setTextColor(100, 116, 139);
+  doc.text('ORIGIN WAREHOUSE', margin + 8, y + 8);
+  doc.text('DESTINATION', margin + col + 8, y + 8);
+  doc.text('QUANTITY', margin + col * 2 + 8, y + 8);
+
+  // Dividers
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin + col, y + 2, margin + col, y + 24);
+  doc.line(margin + col * 2, y + 2, margin + col * 2, y + 24);
+
+  // Values
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.setTextColor(15,23,42);
-  doc.text('Cost Breakdown', margin, y);
-  y += 5;
+  doc.setTextColor(15, 23, 42);
+  doc.text(whLabel, margin + 8, y + 19);
+  doc.text(country, margin + col + 8, y + 19);
+  doc.text(qty.toString(), margin + col * 2 + 8, y + 19);
+
+  y += 34;
+
+  // ── Section label ────────────────────────────────────────────
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(100, 116, 139);
+  doc.text('COST BREAKDOWN', margin, y);
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin + 32, y - 1, margin + contentW, y - 1);
+  y += 4;
+
+  // ── Cost table ───────────────────────────────────────────────
+  const dutyLabel = (isReturns ? 'German Import VAT ' : 'Local Duties & Tax ') + get('r-duty-pct');
+  const iorLabel  = 'IOR Minimum Fee' + (qty > 1 && !isReturns ? ' (\xd7' + qty + ')' : '');
+  const fixedLabel= 'Fixed Cost - Freight & Brokerage' + (qty > 1 && !isReturns ? ' (\xd7' + qty + ')' : '');
 
   doc.autoTable({
     startY: y,
@@ -2690,72 +2715,94 @@ function generateQuotePDF() {
       ['Declared Value per Unit', currSymbol + val.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ' + currLabel],
       ['Quantity', qty.toString()],
       ['Total Declared Value', get('r-total-value')],
-      [( isReturns ? 'German Import VAT ' : 'Local Duties & Tax ') + get('r-duty-pct'), get('r-duty')],
-      ['IOR Minimum Fee' + (qty>1 && !isReturns?' (×'+qty+')':''), get('r-ior')],
-      ['Fixed Cost – Freight & Brokerage' + (qty>1 && !isReturns?' (×'+qty+')':''), get('r-fixed')],
+      [dutyLabel, get('r-duty')],
+      [iorLabel, get('r-ior')],
+      [fixedLabel, get('r-fixed')],
       ['Subtotal Export Charges', get('r-subtotal')],
       ['Firstbase Service & Handling (8%)', get('r-handling')],
     ],
     foot: [['Total Estimated Cost', get('r-total')]],
-    headStyles: { fillColor:[37,99,235], textColor:255, fontStyle:'bold', fontSize:9 },
-    footStyles: { fillColor:[15,23,42], textColor:255, fontStyle:'bold', fontSize:10 },
-    bodyStyles: { fontSize:9, textColor:[15,23,42] },
-    alternateRowStyles: { fillColor:[248,250,252] },
-    columnStyles: { 0:{ cellWidth:'auto' }, 1:{ cellWidth:45, halign:'right', fontStyle:'bold' } },
+    headStyles: {
+      fillColor: [37, 99, 235],
+      textColor: 255,
+      fontStyle: 'bold',
+      fontSize: 8.5,
+      cellPadding: { top: 5, bottom: 5, left: 5, right: 5 }
+    },
+    footStyles: {
+      fillColor: [15, 23, 42],
+      textColor: 255,
+      fontStyle: 'bold',
+      fontSize: 10,
+      cellPadding: { top: 6, bottom: 6, left: 5, right: 5 },
+      halign: 'right'
+    },
+    bodyStyles: {
+      fontSize: 9,
+      textColor: [15, 23, 42],
+      cellPadding: { top: 4, bottom: 4, left: 5, right: 5 }
+    },
+    alternateRowStyles: { fillColor: [248, 250, 252] },
+    columnStyles: {
+      0: { cellWidth: 'auto' },
+      1: { cellWidth: 42, halign: 'right', fontStyle: 'bold' }
+    },
     didParseCell: (data) => {
-      // Highlight the three main cost rows
-      const highlight = ['Local Duties & Tax','IOR Minimum Fee','Fixed Cost'];
-      if (data.section==='body' && highlight.some(h=>String(data.row.raw[0]).startsWith(h))) {
-        data.cell.styles.textColor = [37,99,235];
+      if (data.section === 'foot') {
+        data.cell.styles.halign = 'right';
+      }
+      const highlight = ['German Import VAT','Local Duties & Tax','IOR Minimum Fee','Fixed Cost'];
+      if (data.section === 'body' && data.column.index === 1 &&
+          highlight.some(h => String(data.row.raw[0]).startsWith(h))) {
+        data.cell.styles.textColor = [37, 99, 235];
       }
     }
   });
 
-  y = doc.lastAutoTable.finalY + 10;
+  y = doc.lastAutoTable.finalY + 8;
 
-  // ── Transit time badge
-  const transitText = get('r-transit');
-  doc.setFillColor(239,246,255);
-  doc.setDrawColor(191,219,254);
-  doc.roundedRect(margin, y, contentW, 10, 2, 2, 'FD');
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(9);
-  doc.setTextColor(37,99,235);
-  doc.text(transitText, margin + contentW/2, y+6.5, { align:'center' });
+  // ── Transit time (text only, no emoji, no bubble) ────────────
+  const rawTransit = get('r-transit').replace(/^[^\w]+/, '').trim(); // strip leading emoji
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(37, 99, 235);
+  doc.text('Estimated Transit: ' + rawTransit.replace('Transit time: ', ''), margin, y);
 
-  y += 18;
+  y += 8;
 
-  // ── Footnote for Germany - Returns
+  // ── Footnote for Germany - Returns (plain text, no bubble) ───
   if (isReturns) {
-    doc.setFillColor(239,246,255);
-    doc.setDrawColor(191,219,254);
-    doc.roundedRect(margin, y, contentW, 16, 2, 2, 'FD');
-    doc.setFont('helvetica','italic');
-    doc.setFontSize(7.5);
-    doc.setTextColor(37,99,235);
     const footnoteText = '* Returns from Switzerland and Norway are imported into the Firstbase Germany warehouse and processed through the EU warehouse lifecycle (reuse, storage, or ITAD). Only export/import service fees apply; standard return action fees do not apply.';
-    const fnLines = doc.splitTextToSize(footnoteText, contentW - 8);
-    doc.text(fnLines, margin + 4, y + 5.5);
-    y += 20;
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(7.5);
+    doc.setTextColor(100, 116, 139);
+    const fnLines = doc.splitTextToSize(footnoteText, contentW);
+    doc.text(fnLines, margin, y);
+    y += fnLines.length * 4 + 4;
   }
 
-  // ── Disclaimer
-  doc.setFont('helvetica','italic');
+  // ── Disclaimer ───────────────────────────────────────────────
+  doc.setDrawColor(226, 232, 240);
+  doc.line(margin, y, margin + contentW, y);
+  y += 5;
+
+  doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
-  doc.setTextColor(100,116,139);
-  const disclaimer = 'Rates are estimates and may vary based on local taxes, customs clearance, brokerage fees, and contractor costs at time of shipment. Only new, unopened laptops in original packaging qualify. For shipments with a total declared value exceeding $10,000 USD, please contact the Firstbase team for a custom quotation.';
+  doc.setTextColor(100, 116, 139);
+  const disclaimer = 'Rates are estimates and may vary based on local taxes, customs clearance, brokerage fees, and contractor costs at time of shipment. For shipments with a total declared value exceeding $10,000 USD, please contact the Firstbase team for a custom quotation.';
   const lines = doc.splitTextToSize(disclaimer, contentW);
   doc.text(lines, margin, y);
 
-  // ── Footer
-  doc.setFillColor(37,99,235);
-  doc.rect(0, 287, pageW, 10, 'F');
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(7);
-  doc.setTextColor(255,255,255);
-  doc.text('Firstbase Export Services  |  exports@firstbase.io', pageW/2, 293, { align:'center' });
+  // ── Footer ───────────────────────────────────────────────────
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 285, pageW, 12, 'F');
+  doc.setFillColor(37, 99, 235);
+  doc.rect(0, 285, 3, 12, 'F');
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(148, 163, 184);
+  doc.text('Firstbase - An Appdirect Company  |  Export Services  |  exports@firstbase.io', pageW / 2, 292.5, { align: 'center' });
 
-  // Save
   const filename = `Firstbase_Export_Quote_${country.replace(/\s+/g,'_')}_${new Date().toISOString().slice(0,10)}.pdf`;
   doc.save(filename);
 }
